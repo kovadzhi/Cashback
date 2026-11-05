@@ -238,15 +238,19 @@ function selectPoint(p){
  stopScrollMotion(sheetElements.offersScroll);stopScrollMotion(sheetElements.detailScroll);
  sheetState.selected=p;sheetState.listExpanded=false;sheetState.listIntermediate=false;sheetState.detailExpanded=false;
  const info=PARTNER_INFO[p.name];
- document.getElementById('detailName').textContent=p.name;
- document.getElementById('detailCategory').textContent=info?.[0]||p.category;
- document.getElementById('detailAbout').textContent=info?.[1]||'';
- document.getElementById('detailCash').textContent='Кэшбэк '+p.cash+'%';
  const offer=partnerByName.get(p.name)||p;
- document.getElementById('detailTerms').textContent=`${offer.condition||'За покупки на кассе'} до ${offer.untilDay||30} ноября`;
- document.getElementById('detailLimit').textContent=`Максимум — ${offer.maxBonuses||800} бонусов`;
- document.getElementById('detailAddress').textContent=p.address||'';
- document.getElementById('detailHours').textContent=`Ежедневно 08:00 – ${String(offer.closingHour??21).padStart(2,'0')}:00`;
+ const fields={
+  detailName:p.name,
+  detailCategory:info?.[0]||p.category,
+  detailAbout:info?.[1]||'',
+  detailCash:'Кэшбэк '+p.cash+'%',
+  detailTerms:`${offer.condition||'За покупки на кассе'} до ${offer.untilDay||30} ноября`,
+  detailLimit:`Максимум — ${formatPinBonusNumber(offer.maxBonuses||800)} бонусов`,
+  detailAddress:p.address||'',
+  detailHours:`Ежедневно 08:00 – ${String(offer.closingHour??21).padStart(2,'0')}:00`
+ };
+ for(const [id,text] of Object.entries(fields))setPinDetailText(id,text);
+ sheetElements.detail.querySelectorAll('h2').forEach(heading=>setPinDetailText(heading,heading.textContent));
 
  const logo=document.getElementById('detailLogo');logo.src=p.logo;logo.alt=p.name;
  sheetElements.detailScroll.scrollTop=0;sheetElements.wrap.classList.add('detail-open');

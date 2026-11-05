@@ -1,0 +1,24 @@
+Pin detail typography — verification
+
+Applied after the preceding map-performance change completed (base 5636f8e).
+212 integration checks PASS, 45 typography checks PASS,
+16 partner-data checks PASS; all 147 logo background colours verified.
+60 movement scenarios PASS across six viewport sizes:
+3153 frames, 69998 measurements, zero observed artifacts.
+
+Visual review:
+- 320x568: selected offer, 1 NBSP 950 bonus limit, preserved card wrapping.
+- 375x812: expanded long partner name, conjunction kept with its next word,
+  address number and description paragraphs remain legible.
+- 390x844: expanded offer, grouped bonus amount, house abbreviation,
+  linked prepositions, final description period removed.
+Screenshots: screenshots/pin-typography-320.png, -375.png, -390.png.
+In the 390px card all 13 protected groups occupied one text rectangle and
+had white-space:nowrap. DOM text confirmed U+00A0, not a regular space.
+
+Formatting is display-only, idempotent, preserves paragraphs, original
+partner records, number values, abbreviation dots and internal sentences.
+It is applied on pin selection, not on camera frames. Map rendering,
+viewport culling and settled list synchronization remain unchanged.
+The visual basemap was the existing local OSM/OpenFreeMap QA raster;
+product map source and style remain unchanged.

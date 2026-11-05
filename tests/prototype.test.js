@@ -113,7 +113,7 @@
   check('Карточка пина начинает появление ниже экрана',box('detailSheet').top>=811);
   check('Основная шторка получает положение под экраном',parseFloat(sheetElements.offers.style.top)>812);
   await settle();
-  check('Открывается шторка выбранного пина',!sheetElements.detail.hidden&&document.getElementById('detailName').textContent===chosen.name);
+  check('Открывается шторка выбранного пина',!sheetElements.detail.hidden&&document.getElementById('detailName').textContent===formatPinDetailText(chosen.name));
   check('Активная область выбранного пина 272 px с Header',near(box('markers').top,0)&&near(box('markers').height,272)&&near(box('detailSheet').top,272));
   check('Карточка пина блокирует прокрутку до раскрытия',getComputedStyle(sheetElements.detailScroll).overflowY==='hidden');
   check('Карточка скрывает кнопки карты без перемещения',getComputedStyle(document.querySelector('.zoom')).opacity==='0'&&near(document.querySelector('.zoom').getBoundingClientRect().top,controlsTop));
@@ -121,11 +121,15 @@
   check('Карточка расположена поверх основной шторки',Number(getComputedStyle(sheetElements.detail).zIndex)>Number(getComputedStyle(sheetElements.offers).zIndex));
   check('Скругления карточки пина 20 px',getComputedStyle(sheetElements.detail).borderTopLeftRadius==='20px'&&getComputedStyle(sheetElements.detail).borderTopRightRadius==='20px');
   check('Партнёрский кэшбэк в карточке',document.getElementById('detailCash').textContent==='Кэшбэк '+cashBefore+'%');
-  check('Категория и описание выбранного партнёра',document.getElementById('detailCategory').textContent===PARTNER_INFO[chosen.name][0]&&document.getElementById('detailAbout').textContent===PARTNER_INFO[chosen.name][1]);
-  check('В карточке адрес выбранного здания',document.getElementById('detailAddress').textContent===chosen.address);
-  check('В карточке максимум бонусов партнёра',document.getElementById('detailLimit').textContent===`Максимум — ${chosen.maxBonuses} бонусов`);
-  check('В карточке условие и ноябрьская дата',document.getElementById('detailTerms').textContent===`${chosen.condition} до ${chosen.untilDay} ноября`);
+  check('Категория и описание выбранного партнёра',document.getElementById('detailCategory').textContent===formatPinDetailText(PARTNER_INFO[chosen.name][0])&&document.getElementById('detailAbout').textContent===formatPinDetailText(PARTNER_INFO[chosen.name][1]));
+  check('В карточке адрес выбранного здания',document.getElementById('detailAddress').textContent===formatPinDetailText(chosen.address));
+  check('В карточке максимум бонусов партнёра',document.getElementById('detailLimit').textContent===`Максимум — ${formatPinBonusNumber(chosen.maxBonuses)} бонусов`);
+  check('В карточке условие и ноябрьская дата',document.getElementById('detailTerms').textContent===formatPinDetailText(`${chosen.condition} до ${chosen.untilDay} ноября`));
   check('В карточке время работы партнёра',document.getElementById('detailHours').textContent===`Ежедневно 08:00 – ${String(chosen.closingHour).padStart(2,'0')}:00`);
+  check('Предлог в заголовке О месте связан с существительным',document.querySelector('.about-card h2').textContent==='О\u00a0месте');
+  check('Последнее предложение описания не заканчивается точкой',!document.getElementById('detailAbout').textContent.endsWith('.'));
+  check('Сокращение дома связано с номером неразрывным пробелом',document.getElementById('detailAddress').textContent.includes('д.\u00a0'));
+  check('Типографические группы запрещают перенос внутри',document.querySelectorAll('#detailSheet .pin-detail-no-break').length>0&&[...document.querySelectorAll('#detailSheet .pin-detail-no-break')].every(el=>getComputedStyle(el).whiteSpace==='nowrap'));
   check('Логотип выбранного партнёра',document.getElementById('detailLogo').getAttribute('src')===chosen.logo);
   check('Выбранный пин единственный',document.querySelectorAll('.marker.selected').length===1);
   const toggle=document.getElementById('newLogicToggle');toggle.checked=true;toggle.onchange();await settle();

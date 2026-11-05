@@ -1,0 +1,46 @@
+PASS: Thousands 400
+PASS: Thousands 1000
+PASS: Thousands 1200
+PASS: Thousands 1950
+PASS: Thousands 2000
+PASS: Thousands 1000000
+PASS: Remove final sentence period
+PASS: Idempotent: Remove final sentence period
+PASS: Preserve internal paragraph punctuation
+PASS: Idempotent: Preserve internal paragraph punctuation
+PASS: User examples
+PASS: Idempotent: User examples
+PASS: Consecutive link words
+PASS: Idempotent: Consecutive link words
+PASS: Consecutive prepositions
+PASS: Idempotent: Consecutive prepositions
+PASS: Compound preposition
+PASS: Idempotent: Compound preposition
+PASS: Offer condition and date
+PASS: Idempotent: Offer condition and date
+PASS: Address abbreviation
+PASS: Idempotent: Address abbreviation
+PASS: Address without original space
+PASS: Idempotent: Address without original space
+PASS: Preserve capital abbreviation
+PASS: Idempotent: Preserve capital abbreviation
+PASS: Preserve building suffix
+PASS: Idempotent: Preserve building suffix
+PASS: Final period before quote
+PASS: Idempotent: Final period before quote
+PASS: Final period after quote
+PASS: Idempotent: Final period after quote
+PASS: Preserve punctuation inside brand
+PASS: Idempotent: Preserve punctuation inside brand
+PASS: Do not match word fragments
+PASS: Idempotent: Do not match word fragments
+PASS: Preserve year
+PASS: Idempotent: Preserve year
+PASS: Static about heading
+PASS: Idempotent: Static about heading
+PASS: Preserve explicit paragraphs
+PASS: Idempotent: Preserve explicit paragraphs
+PASS: Empty text
+PASS: Idempotent: Empty text
+PASS: NBSP code point
+45 checks passed

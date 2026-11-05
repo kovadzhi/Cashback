@@ -51,3 +51,4 @@ img{-webkit-user-drag:none;user-drag:none}
 .detail-content,.offer-list{will-change:transform}
 
 #detailAbout{white-space:pre-line}
+#detailSheet .pin-detail-no-break{white-space:nowrap}
