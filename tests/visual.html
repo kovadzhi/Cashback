@@ -5,7 +5,7 @@
  const base=new URL('../',location.href).href;
  const scene=new URLSearchParams(location.search).get('scene')||'new';
  const script='<script>map.stop();'+({
-  empty:"map.jumpTo({center:[0,0],zoom:16});render();",
+  empty:"map.jumpTo({center:[38.3,55.8],zoom:14});render();",
   selected:"selectPoint(points.find(p=>p.name==='Штолле'));",
   old:"map.jumpTo({center:USER_LOCATION,zoom:13});render();",
   new:"document.getElementById('newLogicToggle').checked=true;fitInitialNewLogicArea();render();"

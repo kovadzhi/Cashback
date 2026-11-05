@@ -114,7 +114,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}.hint{font-size:11px;color
 }
 
 </style>
-<link rel="stylesheet" href="sheets.css">
+<link rel="stylesheet" href="sheets.css?v=20261105-header44">
 </head>
 <body>
 <div class="app">
@@ -164,11 +164,6 @@ input[type=range]{width:100%;accent-color:var(--blue)}.hint{font-size:11px;color
 <div id="map" aria-label="Карта предложений"></div>
 <header class="screen-header" data-node-id="10:994">
  <div class="header-gradient" aria-hidden="true"></div>
- <div class="status-bar" aria-hidden="true">
-  <img class="status-time" src="assets/status-time.svg" alt="">
-  <img class="status-battery" src="assets/status-battery.svg" alt="">
-  <img class="status-connection" src="assets/status-connection.svg" alt="">
- </div>
  <div class="header-controls"><label class="logic-chip"><input id="newLogicToggle" type="checkbox" role="switch" aria-label="Новая логика"><span>Новая логика</span><span class="logic-switch" aria-hidden="true"></span></label></div>
 </header>
 <input id="goodsToggle" type="checkbox" hidden aria-hidden="true" tabindex="-1">
@@ -276,7 +271,7 @@ function getVisibleTiles(tileZoom){
  if(!mapReady)return [];
  const z=Number.isFinite(tileZoom)?tileZoom:Math.max(0,Math.min(23,Math.floor(map.getZoom()+1e-8)));
  if(z<0||z>DB_QUADKEY_DEPTH)return [];
- const b=map.getBounds();
+ const b=getActiveMapBounds();
  const nw=lngLatToTile(b.getWest(),b.getNorth(),z),se=lngLatToTile(b.getEast(),b.getSouth(),z),out=[];
  // Для Москвы область не пересекает антимеридиан. Перебираем все XYZ-тайлы
  // прямоугольника видимой области, как в описанном backend-алгоритме.
@@ -291,7 +286,7 @@ function renderTiles(){
  if(!showTiles.checked||!mapReady){list.style.display='none';summary.textContent=showTiles.checked?'Ожидание загрузки карты…':'Включите сетку, чтобы увидеть тайлы видимой области.';return;}
  const visualZ=getAppZoom(map.getZoom()),z=getQuadkeyZoom(map.getZoom());const tiles=getVisibleTiles(z);list.style.display='block';
  summary.innerHTML=`Уровень приложения: <b>${visualZ} / 23</b> · MapLibre zoom: <b>${Math.floor(map.getZoom()+1e-8)} / 23</b><br>Видимых тайлов: <b>${tiles.length}</b> · всего на уровне: <b>${(4**z).toLocaleString('ru-RU')}</b>`;
- tiles.forEach(t=>{const nw=tileToLngLat(t.x,t.y,z),se=tileToLngLat(t.x+1,t.y+1,z),a=map.project(nw),b=map.project(se),el=document.createElement('div');el.className='tile-cell';el.style.left=Math.min(a.x,b.x)+'px';el.style.top=Math.min(a.y,b.y)+'px';el.style.width=Math.abs(b.x-a.x)+'px';el.style.height=Math.abs(b.y-a.y)+'px';const label=document.createElement('span');label.textContent=t.key||'(root)';el.appendChild(label);layer.appendChild(el);});
+ tiles.forEach(t=>{const nw=tileToLngLat(t.x,t.y,z),se=tileToLngLat(t.x+1,t.y+1,z),a=projectActive(nw),b=projectActive(se),el=document.createElement('div');el.className='tile-cell';el.style.left=Math.min(a.x,b.x)+'px';el.style.top=Math.min(a.y,b.y)+'px';el.style.width=Math.abs(b.x-a.x)+'px';el.style.height=Math.abs(b.y-a.y)+'px';const label=document.createElement('span');label.textContent=t.key||'(root)';el.appendChild(label);layer.appendChild(el);});
  list.innerHTML=tiles.map(t=>{const r=t.range;return `<div><b>${t.key||'(root)'}</b> · x:${t.x} y:${t.y} · БД: ${r.from} … ${r.to}</div>`}).join('');
 }
 function score(p){let cw=+cashWeight.value,dw=+distanceWeight.value,rw=+relevanceWeight.value,total=cw+dw+rw||1;let centerScore=1-Math.min(1,(p.distanceKm||0)/29);return (p.cash/30*cw+centerScore*dw+(p.rel/100)*rw)/total}
@@ -309,6 +304,8 @@ function getTileClusters(source,tileZoom){
  const visibleTiles=getVisibleTiles(tileZoom);
  const tileBuckets=new Map(visibleTiles.map(t=>[t.key,{...t,items:[]}]));
  source.forEach(p=>{
+  const pt=projectActive([p.lng,p.lat]),viewport=getActiveMapSize();
+  if(pt.x<0||pt.x>viewport.clientWidth||pt.y<0||pt.y>viewport.clientHeight)return;
   const t=lngLatToTile(p.lng,p.lat,tileZoom);
   const key=tileToQuadkey(t.x,t.y,tileZoom);
   const bucket=tileBuckets.get(key);
@@ -332,7 +329,7 @@ function renderTileClusters(layer,source,z){
  if(z<MIN_POINT_TILE_ZOOM||z>MAX_POINT_TILE_ZOOM){document.getElementById('shown').textContent=0;document.getElementById('compactCount').textContent=0;document.getElementById('hiddenCount').textContent=0;document.getElementById('tileSummary').innerHTML=`Уровень тайлов: <b>${z}</b>.`;return;}
  document.getElementById('tileSummary').innerHTML=`Уровень тайлов: <b>${z}</b> · видимых тайлов: <b>${visibleTiles.length}</b> · точек в области тайлов: <b>${singles.length+clusters.reduce((n,g)=>n+g.count,0)}</b>`;
  renderExpandedPins(layer,singles);
- if(showClusters.checked&&showHidden.checked){clusters.forEach(g=>{const p=g.representative,pt=mapReady?map.project([p.lng,p.lat]):{x:p.x*layer.clientWidth,y:p.y*layer.clientHeight};const el=document.createElement('div');el.className='cluster';el.style.left=pt.x+'px';el.style.top=pt.y+'px';const countBox=document.createElement('span');countBox.className='cluster-count';const countText=document.createElement('span');countText.className='cluster-count-text';countText.textContent=g.count>99?'99+':String(g.count);countBox.appendChild(countText);el.appendChild(countBox);el.title=`Кластер · ${g.count} точек · тайл ${g.key}`;el.onclick=()=>{if(mapReady){const next=Math.min(MAX_MAP_ZOOM,map.getZoom()+1);map.easeTo({center:[p.lng,p.lat],zoom:next,duration:350});}else{zoom=Math.min(23,zoom+1);zoomInput.value=zoom;zoomVal.textContent=zoom;render();}};layer.appendChild(el);hidden+=g.count;});}
+ if(showClusters.checked&&showHidden.checked){clusters.forEach(g=>{const p=g.representative,pt=mapReady?projectActive([p.lng,p.lat]):{x:p.x*layer.clientWidth,y:p.y*layer.clientHeight};const el=document.createElement('div');el.className='cluster';el.style.left=pt.x+'px';el.style.top=pt.y+'px';const countBox=document.createElement('span');countBox.className='cluster-count';const countText=document.createElement('span');countText.className='cluster-count-text';countText.textContent=g.count>99?'99+':String(g.count);countBox.appendChild(countText);el.appendChild(countBox);el.title=`Кластер · ${g.count} точек · тайл ${g.key}`;el.onclick=()=>{if(mapReady){const next=Math.min(MAX_MAP_ZOOM,map.getZoom()+1);map.easeTo({center:[p.lng,p.lat],zoom:next,duration:350});}else{zoom=Math.min(23,zoom+1);zoomInput.value=zoom;zoomVal.textContent=zoom;render();}};layer.appendChild(el);hidden+=g.count;});}
  else if(clusters.length){clusters.forEach(g=>hidden+=g.count);}
  document.getElementById('hiddenCount').textContent=hidden;
  document.getElementById('tileSummary').innerHTML=
@@ -357,18 +354,18 @@ function updateMobileHud(){
 function applyNewDuplicateLogic(candidates){
  // В новой логике одновременно раскрываем не более четырёх обычных партнёрских пинов
  // внутри вьюпорта. Приоритет — вес партнёра, затем близость к точке отсчёта.
- const container=map.getContainer();
- const locationPoint=map.project(USER_LOCATION);
+ const container=getActiveMapSize();
+ const locationPoint=projectActive(USER_LOCATION);
  const locationVisible=locationPoint.x>=0&&locationPoint.y>=0&&
   locationPoint.x<=container.clientWidth&&locationPoint.y<=container.clientHeight;
  const referenceLngLat=locationVisible
   ? {lat:USER_LOCATION[1],lng:USER_LOCATION[0]}
-  : (()=>{const center=map.unproject([container.clientWidth/2,container.clientHeight/2]);return {lat:center.lat,lng:center.lng};})();
+  : (()=>{const center=unprojectActive([container.clientWidth/2,container.clientHeight/2]);return {lat:center.lat,lng:center.lng};})();
  const regular=candidates.filter(c=>!c.p.isGoods);
  // Координаты рассчитываем здесь: applyNewDuplicateLogic вызывается до
  // общего прохода, который записывает screenX/screenY в renderExpandedPins.
  const inViewport=regular.filter(c=>{
-  const point=map.project([c.p.lng,c.p.lat]);
+  const point=projectActive([c.p.lng,c.p.lat]);
   c.screenX=point.x;
   c.screenY=point.y;
   return point.x>=0&&point.y>=0&&
@@ -390,8 +387,8 @@ function applyNewDuplicateLogic(candidates){
 function applyGoodsDisplayLogic(candidates){
  const goods=candidates.filter(c=>c.p.isGoods);
  if(!goods.length)return;
- const container=map.getContainer();
- const center=map.unproject([container.clientWidth/2,container.clientHeight/2]);
+ const container=getActiveMapSize();
+ const center=unprojectActive([container.clientWidth/2,container.clientHeight/2]);
  goods.forEach(c=>{c.goodsState='hidden';});
  const visible=goods.filter(c=>
   c.screenX>=0&&c.screenY>=0&&
@@ -485,7 +482,7 @@ function renderPartnerOverlapClusters(layer,compactCandidates){
    cluster.title=`Партнёры · ${group.length} предложений`;
    cluster.onclick=()=>{
     if(!mapReady)return;
-    const center=map.unproject([x,y]);
+    const center=unprojectActive([x,y]);
     map.easeTo({center:[center.lng,center.lat],zoom:Math.min(MAX_MAP_ZOOM,map.getZoom()+1),duration:350});
    };
    layer.appendChild(cluster);
@@ -524,7 +521,7 @@ function renderPartnerOverlapClusters(layer,compactCandidates){
   cluster.title=`Партнёры · ${group.length} предложений`;
   cluster.onclick=()=>{
    if(!mapReady)return;
-   const center=map.unproject([x,y]);
+   const center=unprojectActive([x,y]);
    map.easeTo({center:[center.lng,center.lat],zoom:Math.min(MAX_MAP_ZOOM,map.getZoom()+1),duration:350});
   };
   layer.appendChild(cluster);
@@ -536,7 +533,7 @@ function renderExpandedPins(layer,sourcePoints=points){
  const candidates=[];
  const width=layer.clientWidth,height=layer.clientHeight;
  sourcePoints.forEach(p=>{
-  const pt=map.project([p.lng,p.lat]);
+  const pt=projectActive([p.lng,p.lat]);
   // В новой логике держим расширенную область пинов за пределами экрана.
   // Она остаётся в DOM во время перемещения карты, поэтому при въезде в экран
   // пины уже имеют рассчитанное состояние и не создают пустых участков.
@@ -563,17 +560,17 @@ function renderExpandedPins(layer,sourcePoints=points){
  if(document.getElementById('newLogicToggle').checked){
   applyNewDuplicateLogic(candidates);
   candidates.forEach(c=>{
-   const point=map.project([c.p.lng,c.p.lat]);
+   const point=projectActive([c.p.lng,c.p.lat]);
    c.screenX=point.x;c.screenY=point.y;
   });
   applyGoodsDisplayLogic(candidates);
   const regularCandidates=candidates.filter(c=>!c.p.isGoods);
-  const locationPoint=map.project(USER_LOCATION);
+  const locationPoint=projectActive(USER_LOCATION);
   const locationVisible=locationPoint.x>=0&&locationPoint.y>=0&&
    locationPoint.x<=width&&locationPoint.y<=height;
   const reference=locationVisible
    ? {lat:USER_LOCATION[1],lng:USER_LOCATION[0]}
-   : (()=>{const center=map.unproject([width/2,height/2]);return {lat:center.lat,lng:center.lng};})();
+   : (()=>{const center=unprojectActive([width/2,height/2]);return {lat:center.lat,lng:center.lng};})();
 
   // Один раскрытый пин на партнёра; максимум четыре партнёра одновременно.
   // Рейтинг определяется весом партнёра, затем расстоянием до точки отсчёта.
@@ -666,7 +663,7 @@ function renderExpandedPins(layer,sourcePoints=points){
   // затем у большего веса; проигравшие превращаются в точки.
   // Раскрытый пин допустим только если весь его DOM-блок помещается во viewport.
   // Иначе он сразу становится точкой и не участвует в дальнейшей проверке пересечений.
-  const mapRect=map.getContainer().getBoundingClientRect();
+  const mapRect=document.getElementById('markers').getBoundingClientRect();
   const edgeCandidates=[
    ...expandedPartnerCandidates,
    ...candidates.filter(c=>c.p.isGoods&&c.goodsState==='expanded'&&c.el.isConnected)
@@ -825,7 +822,7 @@ function renderExpandedPins(layer,sourcePoints=points){
    cluster.title=`Предложения · ${members.length}`;
    cluster.onclick=()=>{
     if(!mapReady)return;
-    const center=map.unproject([x,y]);
+    const center=unprojectActive([x,y]);
     map.easeTo({center:[center.lng,center.lat],zoom:Math.min(MAX_MAP_ZOOM,map.getZoom()+1),duration:350});
    };
    layer.appendChild(cluster);
@@ -879,7 +876,7 @@ function renderExpandedPins(layer,sourcePoints=points){
    cluster.title=`Партнёр и товары · ${members.length} предложений`;
    cluster.onclick=()=>{
     if(!mapReady)return;
-    const centerPoint=map.unproject([x,y]);
+    const centerPoint=unprojectActive([x,y]);
     map.easeTo({center:[centerPoint.lng,centerPoint.lat],zoom:Math.min(MAX_MAP_ZOOM,map.getZoom()+1),duration:350});
    };
    layer.appendChild(cluster);
@@ -985,7 +982,7 @@ function repositionNewLogicElements(){
  layer.querySelectorAll('.marker[data-pin-id]').forEach(el=>{
   const p=pointById.get(String(el.dataset.pinId));
   if(!p)return;
-  const pt=map.project([p.lng,p.lat]);
+  const pt=projectActive([p.lng,p.lat]);
   el.style.left=pt.x+'px';el.style.top=pt.y+'px';
  });
  layer.querySelectorAll('.cluster[data-member-ids]').forEach(el=>{
@@ -993,7 +990,7 @@ function repositionNewLogicElements(){
   const members=ids.map(id=>pointById.get(id)).filter(Boolean);
   if(!members.length)return;
   const center=members.reduce((sum,p)=>{
-   const pt=map.project([p.lng,p.lat]);sum.x+=pt.x;sum.y+=pt.y;return sum;
+   const pt=projectActive([p.lng,p.lat]);sum.x+=pt.x;sum.y+=pt.y;return sum;
   },{x:0,y:0});
   el.style.left=(center.x/members.length)+'px';
   el.style.top=(center.y/members.length)+'px';
@@ -1003,7 +1000,7 @@ function repositionNewLogicElements(){
   const members=ids.map(id=>pointById.get(id)).filter(Boolean);
   if(!members.length)return;
   const center=members.reduce((sum,p)=>{
-   const pt=map.project([p.lng,p.lat]);sum.x+=pt.x;sum.y+=pt.y;
+   const pt=projectActive([p.lng,p.lat]);sum.x+=pt.x;sum.y+=pt.y;
   return sum;
   },{x:0,y:0});
   el.style.left=(center.x/members.length)+'px';
@@ -1016,7 +1013,7 @@ function repositionNewLogicElements(){
   const members=ids.map(id=>pointById.get(id)).filter(Boolean);
   if(!members.length)return;
   const center=members.reduce((sum,p)=>{
-   const pt=map.project([p.lng,p.lat]);
+   const pt=projectActive([p.lng,p.lat]);
    sum.x+=pt.x;sum.y+=pt.y;
    return sum;
   },{x:0,y:0});
@@ -1026,7 +1023,7 @@ function repositionNewLogicElements(){
 }
 function render(){renderMapPins();if(typeof renderSelectedMarker==='function')renderSelectedMarker();if(typeof scheduleOfferRefresh==='function')scheduleOfferRefresh();}
 function renderMapPins(){const layer=document.getElementById('markers');layer.innerHTML='';updateMobileHud();if(mapReady&&document.getElementById('newLogicToggle').checked){renderExpandedPins(layer,getRenderPoints());renderTiles();return;}if(mapReady && (mode==='cluster'||mode==='hybrid')){const tileZoom=getQuadkeyZoom(map.getZoom());renderTileClusters(layer,getRenderPoints(),tileZoom);renderTiles();return;}if(mapReady){renderExpandedPins(layer);renderTiles();return;}let sorted=[...getRenderPoints()].sort((a,b)=>score(b)-score(a));let placed=[],hidden=0,compact=0,full=0;let minGap=zoom>=17?48:zoom>=15?58:72;
-for(let p of sorted){let projected=mapReady?map.project([p.lng,p.lat]):{x:p.x*layer.clientWidth,y:p.y*layer.clientHeight};let px=projected.x,py=projected.y;
+for(let p of sorted){let projected=mapReady?projectActive([p.lng,p.lat]):{x:p.x*layer.clientWidth,y:p.y*layer.clientHeight};let px=projected.x,py=projected.y;
  let selected=p.selected,near=placed.find(q=>Math.hypot(q.px-px,q.py-py)<minGap);
  let compactState=false,hide=false;
  if(mode==='all'){compactState=false}
@@ -1098,7 +1095,7 @@ document.getElementById('showTiles').onchange=renderTiles;
 document.getElementById('goodsToggle').onchange=render;
 function fitInitialNewLogicArea(){
  if(!mapReady)return;
- const container=map.getContainer();
+ const container=getActiveMapSize();
  const origin=map.getCenter();
  const nearest=points.filter(p=>!p.isGoods).map(p=>({
   p,d:haversineMeters({lat:origin.lat,lng:origin.lng},{lat:p.lat,lng:p.lng})
@@ -1116,7 +1113,7 @@ function fitInitialNewLogicArea(){
  const horizontalPadding=Math.min(190,Math.max(90,container.clientWidth*0.38));
  const verticalPadding=Math.min(170,Math.max(90,container.clientHeight*0.22));
  map.fitBounds(bounds,{
-  padding:{top:verticalPadding,bottom:verticalPadding+24,left:horizontalPadding,right:horizontalPadding},
+  padding:{top:HEADER_HEIGHT+verticalPadding,bottom:getMapPadding().bottom+verticalPadding+24,left:horizontalPadding,right:horizontalPadding},
   maxZoom:15,duration:550
  });
 }
@@ -1128,6 +1125,6 @@ makePoints(1200);makeGoodsPoints();
 
 </script>
 <script src="partners.js"></script>
-<script src="sheets.js"></script>
+<script src="sheets.js?v=20261105-header44"></script>
 <script>initSheets();initMap();connectSheetsToMap();</script>
 </body></html>
