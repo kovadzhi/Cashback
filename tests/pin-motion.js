@@ -26,10 +26,11 @@ window.runPinMotion=async function(scenario,capture){
   for(const el of layer.querySelectorAll('.marker:not(.selected)')){
    const pill=el.querySelector('.pill'),rect=pill.getBoundingClientRect(),style=getComputedStyle(el),pillStyle=getComputedStyle(pill);
    const state=el.dataset.state;
+   const clipped=state==='expanded'&&!newPinInsideViewport(el.getBoundingClientRect(),layer.getBoundingClientRect());
    const target=state==='dot'?16:state==='compact'?28:parseFloat(pill.style.width);
    samples++;
-   if((Math.abs(rect.width-target)>.6||Number(style.opacity)<.999||pillStyle.transitionDuration.split(',').some(s=>parseFloat(s)>0)||style.animationName!=='none')&&errors.length<100){
-    errors.push({frame:frames,id:el.dataset.pinId,state,width:rect.width,target,opacity:style.opacity,animation:style.animationName,transition:pillStyle.transitionDuration});
+   if((clipped||Math.abs(rect.width-target)>.6||Number(style.opacity)<.999||pillStyle.transitionDuration.split(',').some(s=>parseFloat(s)>0)||style.animationName!=='none')&&errors.length<100){
+    errors.push({frame:frames,id:el.dataset.pinId,state,clipped,width:rect.width,target,opacity:style.opacity,animation:style.animationName,transition:pillStyle.transitionDuration});
    }
   }
   if(capture&&snapshotIndex<targets.length&&now-started>=targets[snapshotIndex])snapshots.push(snapshot(targets[snapshotIndex++]));

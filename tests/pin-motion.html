@@ -12,7 +12,7 @@ const scenarios=['redraw','pan','pan-back','zoom-in','zoom-out','fractional','re
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function load(size){
  const [width,height]=size.split('x').map(Number);live.style.width=width+'px';live.style.height=height+'px';
- const script='<script src="tests/pin-motion.js?v=2"><'+'/script>';
+ const script='<script src="tests/pin-motion.js?v=viewport"><'+'/script>';
  live.srcdoc=original.replace('</body>',script+'</body>');
  await new Promise(resolve=>live.onload=resolve);await wait(300);return {width,height};
 }

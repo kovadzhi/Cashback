@@ -55,11 +55,18 @@ function newPinSafeRect(rect){
 function newPinRectsOverlap(a,b){
  return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
 }
+function newPinInsideViewport(rect,viewport){
+ return rect.left>=viewport.left&&rect.top>=viewport.top&&rect.right<=viewport.right&&rect.bottom<=viewport.bottom;
+}
 function repositionNewTileClusters(){
  document.querySelectorAll('.new-tile-cluster').forEach(el=>{
   const pt=projectActive([Number(el.dataset.lng),Number(el.dataset.lat)]);
   el.style.left=pt.x+'px';el.style.top=pt.y+'px';
  });
+ // Reassign text slots as a label crosses an edge during a gesture, before
+ // the browser paints it clipped. Preserve the same keyed DOM commit path.
+ const layer=document.getElementById('markers'),viewport=layer.getBoundingClientRect();
+ if([...layer.querySelectorAll('.new-tile-pin[data-state="expanded"]')].some(el=>!newPinInsideViewport(el.getBoundingClientRect(),viewport)))renderNewTilePins(layer,getRenderPoints());
 }
 function newTileNodeKey(el){
  if(el.classList.contains('new-tile-pin'))return 'pin:'+el.dataset.pinId;
@@ -104,19 +111,8 @@ function renderNewTilePins(layer,source){
   return pt.x>=0&&pt.x<=size.clientWidth&&pt.y>=0&&pt.y<=size.clientHeight;
  };
  const candidates=plan.logos.slice().sort(compareNewPinWeight);
- // Select six distinct partners from the tile winners in the active viewport.
- // Collisions may demote a winner; lower-ranked pins do not take its text slot.
  const expandedIds=new Set(),expandedPartners=new Set();
- for(const p of candidates.filter(inViewport)){
-  if(expandedPartners.has(p.name))continue;
-  if(expandedPartners.size===6)break;
-  expandedPartners.add(p.name);expandedIds.add(p.pinId);
- }
  const partnerLogoIds=new Set(),secondaryPartners=new Set();
- for(const p of candidates.filter(inViewport)){
-  if(!expandedPartners.has(p.name)||expandedIds.has(p.pinId)||secondaryPartners.has(p.name))continue;
-  secondaryPartners.add(p.name);partnerLogoIds.add(p.pinId);
- }
  const occupied=[],entries=[];
  let expanded=0,compact=0,dots=0,clustered=0;
  // Preserve the existing selected marker and its entire tail safety zone.
@@ -150,6 +146,20 @@ function renderNewTilePins(layer,source){
   el.style.zIndex='4';el.dataset.state='dot';pinDisplayState.set(String(p.pinId),'dot');dots++;
  }
  for(const p of candidates)entries.push({...marker(p),type:'pin'});
+ // Measure full labels before assigning the six text slots. A high-weight
+ // pin clipped by any viewport edge stays a logo and does not consume a slot.
+ const viewport=layer.getBoundingClientRect();
+ const fullyInside=rect=>newPinInsideViewport(rect,viewport);
+ for(const entry of entries){
+  entry.fullRect=entry.el.getBoundingClientRect();
+  if(expandedPartners.size===6||expandedPartners.has(entry.p.name)||
+     !inViewport(entry.p)||!fullyInside(entry.fullRect))continue;
+  expandedPartners.add(entry.p.name);expandedIds.add(entry.p.pinId);
+ }
+ for(const p of candidates.filter(inViewport)){
+  if(!expandedPartners.has(p.name)||expandedIds.has(p.pinId)||secondaryPartners.has(p.name))continue;
+  secondaryPartners.add(p.name);partnerLogoIds.add(p.pinId);
+ }
  for(const tile of plan.clusters){
   const mean=tile.items.reduce((sum,p)=>({lng:sum.lng+p.lng/tile.count,lat:sum.lat+p.lat/tile.count}),{lng:0,lat:0});
   const el=document.createElement('div');el.className='cluster new-tile-cluster';
@@ -184,8 +194,7 @@ function renderNewTilePins(layer,source){
   if(expandedPartners.has(p.name)&&!expandedIds.has(p.pinId)&&!partnerLogoIds.has(p.pinId)){
    dot(entry);continue;
   }
-  const fullRect=el.getBoundingClientRect();
-  el.querySelector('.pill').style.width=fullRect.width+'px';
+  el.querySelector('.pill').style.width=entry.fullRect.width+'px';
   let state=expandedIds.has(p.pinId)?'expanded':'compact';
   function fits(){return !occupied.some(rect=>newPinRectsOverlap(rect,newPinSafeRect(el.getBoundingClientRect())));}
   if(state==='expanded'&&!fits())state='compact';

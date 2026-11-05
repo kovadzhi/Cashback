@@ -29,6 +29,21 @@ async function runNewPinTests(check,settle){
  check('Новая логика: нет видимых измерительных элементов',!layer.querySelector('.new-pin-staging'));
  check('Новая логика: точки сразу имеют 16 px и полную непрозрачность',[...layer.querySelectorAll('.partner-dot')].every(el=>Math.abs(el.getBoundingClientRect().width-16)<.1&&getComputedStyle(el).opacity==='1'));
  check('Новая логика: рендер не запускает анимации точек и ширины',[...layer.querySelectorAll('.marker')].every(el=>getComputedStyle(el).animationName==='none'&&getComputedStyle(el.querySelector('.pill')).transitionDuration==='0s'));
+ // All four edges: an in-viewport anchor is insufficient for a text label.
+ const {clientWidth:viewportWidth,clientHeight:viewportHeight}=getActiveMapSize();
+ const fullyInside=el=>{
+  const rect=el.getBoundingClientRect(),viewport=layer.getBoundingClientRect();
+  return rect.left>=viewport.left&&rect.top>=viewport.top&&rect.right<=viewport.right&&rect.bottom<=viewport.bottom;
+ };
+ for(const [edge,x,y] of [['right',viewportWidth-8,65],['left',5,65],['top',270,5],['bottom',270,viewportHeight-5]]){
+  const edgePin=make(40,x,y,300,'Boundary fixture');
+  renderNewTilePins(layer,[edgePin,...fixture.slice(0,6)]);
+  check(`Новая логика: граница ${edge} оставляет высокий вес логотипом`,state(40)==='compact');
+  check(`Новая логика: граница ${edge} передаёт текст следующему весу`,layer.querySelectorAll('[data-state="expanded"]').length===6&&fixture.slice(0,6).every(p=>layer.querySelector(`[data-pin-id="${p.pinId}"]`)?.dataset.state==='expanded'));
+  check(`Новая логика: все текстовые пины внутри вьюпорта (${edge})`,[...layer.querySelectorAll('[data-state="expanded"]')].every(fullyInside));
+ }
+ renderNewTilePins(layer,[make(40,viewportWidth-8,65,300,fixture[0].name),...fixture.slice(0,6)]);
+ check('Новая логика: другой пин того же партнёра может получить текст',state(40)==='compact'&&state(0)==='expanded');
  const highest=make(30,60,65,200),lower=make(31,60,65,190);
  layer.innerHTML='';renderNewTilePins(layer,[lower,highest]);
  check('Новая логика: коллизию выигрывает максимальный вес',state(30)==='expanded'&&state(31)==='dot');
@@ -63,5 +78,13 @@ async function runNewPinTests(check,settle){
  check('Новая логика: клик по тайловому кластеру приближает карту',!!clusterToClick&&map.getZoom()>zoomBefore+.9);
  document.getElementById('newLogicToggle').checked=false;map.jumpTo({center:USER_LOCATION,zoom:11});render();
  check('Выключение новой логики возвращает исходные кластеры',!layer.querySelector('.new-tile-cluster')&&!!layer.querySelector('.cluster'));
+ const toggle=document.getElementById('newLogicToggle');
+ for(const zoom of [11.35,13.8,16.25]){
+  toggle.checked=false;map.jumpTo({center:[37.64,55.76],zoom});render();
+  const centerBefore=map.getCenter().toArray(),zoomBefore=map.getZoom();
+  let events=0;const moved=()=>events++;map.on('move',moved);
+  toggle.checked=true;toggle.onchange();await settle();map.off('move',moved);
+  check(`Переключение логики сохраняет камеру на зуме ${zoom}`,events===0&&Math.abs(map.getZoom()-zoomBefore)<1e-8&&map.getCenter().toArray().every((value,i)=>Math.abs(value-centerBefore[i])<1e-8));
+ }
  document.getElementById('newLogicToggle').checked=true;map.jumpTo({center:USER_LOCATION,zoom:12});render();
 }
