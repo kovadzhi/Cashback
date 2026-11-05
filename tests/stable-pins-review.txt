@@ -1,0 +1,32 @@
+Stable new pin layout after partner update 82a217a
+
+193 functional checks PASS, 0 FAIL; tests/last-run.txt contains 194 lines
+including the technical completion row.
+16 partner-data checks PASS: catalog, weights, colours, addresses, roofs,
+continuous distribution, offers and hours remain valid.
+60 motion scenarios across six viewport sizes PASS.
+3158 frames; 372035 live marker geometry samples.
+The frame probe now checks monotonic states, immutable cluster anchors
+and members, frozen layout revision and absence of moving ghost copies,
+in addition to width, opacity and viewport containment.
+
+Additional state-machine checks cover one settled commit, interrupted
+gestures, inertia/quiet delay, all pin/cluster DOM identities, safe zones,
+text containment, offscreen dot buffer, 16 px reveal hysteresis,
+legacy mode, and immediate selected-marker cleanup when a detail card
+is closed during an active camera gesture.
+
+Six slow visual/observation scenarios on 320x568, 375x812, 390x844:
+2028 frames; zero full layouts during movement; zero geographic cluster
+anchor relocations; one final layout in each scenario.
+See stable-pin-observation.json. Idle collapse animations are retained.
+
+Visual review: slow pan, reversal, edge oscillation, zoom in/out,
+normal and detailed map scales, Self Service card, logic switch and close.
+Screenshots: stable-pins-320.jpg, stable-pins-375.jpg, stable-pins-390.jpg,
+stable-selected-390.jpg in tests/screenshots/.
+
+External vector basemap is unchanged. As in the partner task, the visual
+map inspection used the temporary local QA raster rendered from OSM
+roads and building footprints; production source/style URLs are unchanged.
+No partner catalog, offers, coordinates, colours, or sheet styles changed.

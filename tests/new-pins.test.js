@@ -1,6 +1,6 @@
 async function runNewPinTests(check,settle){
  await newDotColorsReady;
- map.stop();map.jumpTo({center:USER_LOCATION,zoom:13});
+ map.stop();map.jumpTo({center:USER_LOCATION,zoom:13});await settle();
  document.getElementById('newLogicToggle').checked=true;
  const layer=document.getElementById('markers');
  const make=(id,x,y,weight,name=brands[id%brands.length][0])=>({
@@ -103,10 +103,10 @@ async function runNewPinTests(check,settle){
  check('Новая логика: разные фоны дают разные цвета точек',new Set(newPartnerDotColors.values()).size>10);
  // Real data at several zooms: preserve every point in complete visible tiles.
  for(const zoom of [10,12,14,17,22]){
-  map.jumpTo({zoom,center:zoom>=17?[points[0].lng,points[0].lat]:USER_LOCATION});render();
+  map.jumpTo({zoom,center:zoom>=17?[points[0].lng,points[0].lat]:USER_LOCATION});render();await settle();
   const visible=new Set(getVisibleTiles(getQuadkeyZoom(map.getZoom())).map(t=>t.key));
   const expected=points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,getQuadkeyZoom(map.getZoom()));return visible.has(tileToQuadkey(tile.x,tile.y,getQuadkeyZoom(map.getZoom())));}).length;
-  const actual=layer.querySelectorAll('.marker').length+[...layer.querySelectorAll('.new-tile-cluster')].reduce((sum,el)=>sum+el.dataset.memberIds.split(',').length,0);
+  const actual=layer.querySelectorAll('.marker:not(.new-pin-overscan)').length+[...layer.querySelectorAll('.new-tile-cluster')].reduce((sum,el)=>sum+el.dataset.memberIds.split(',').length,0);
   check(`Новая логика: все точки учтены на зуме ${zoom}`,expected===actual,`${actual}/${expected}`);
  }
  map.jumpTo({center:USER_LOCATION,zoom:11});render();await settle();
@@ -123,5 +123,5 @@ async function runNewPinTests(check,settle){
   toggle.checked=true;toggle.onchange();await settle();map.off('move',moved);
   check(`Переключение логики сохраняет камеру на зуме ${zoom}`,events===0&&Math.abs(map.getZoom()-zoomBefore)<1e-8&&map.getCenter().toArray().every((value,i)=>Math.abs(value-centerBefore[i])<1e-8));
  }
- document.getElementById('newLogicToggle').checked=true;map.jumpTo({center:USER_LOCATION,zoom:12});render();
+ document.getElementById('newLogicToggle').checked=true;map.jumpTo({center:USER_LOCATION,zoom:12});render();await settle();
 }

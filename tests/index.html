@@ -9,7 +9,7 @@ window.reportTest=(name,passed,detail='')=>{
 (async()=>{
  const html=await (await fetch('../index.html?verification='+Date.now(),{cache:'no-store'})).text();
  const base=new URL('../',location.href).href;
- const testScript='<script src="tests/new-pins.test.js?v=20261105-partners2000"><'+'/script><script src="tests/prototype.test.js?v=20261105-partners2000"><'+'/script>';
+ const testScript='<script src="tests/new-pins.test.js?v=20261105-motion-stable"><'+'/script><script src="tests/new-pin-stability.test.js?v=20261105-motion-stable5"><'+'/script><script src="tests/prototype.test.js?v=20261105-motion-stable"><'+'/script>';
  document.querySelector('iframe').srcdoc=html.replace('<head>','<head><base href="'+base+'">').replace('</body>',testScript+'</body>');
 })();
 </script></html>

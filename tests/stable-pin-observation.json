@@ -1,0 +1,72 @@
+{
+  "baselinePartnerCommit": "82a217a",
+  "cases": [
+    {
+      "scenario": "pan",
+      "zoom": 11,
+      "width": 390,
+      "height": 844,
+      "frames": 353,
+      "layoutsDuringMove": 0,
+      "totalLayouts": 1,
+      "clusterRelocationsDuringMove": 0,
+      "maxClusterJumpPx": 0
+    },
+    {
+      "scenario": "pan",
+      "zoom": 12,
+      "width": 375,
+      "height": 812,
+      "frames": 354,
+      "layoutsDuringMove": 0,
+      "totalLayouts": 1,
+      "clusterRelocationsDuringMove": 0,
+      "maxClusterJumpPx": 0
+    },
+    {
+      "scenario": "edge",
+      "zoom": 13,
+      "width": 320,
+      "height": 568,
+      "frames": 335,
+      "layoutsDuringMove": 0,
+      "totalLayouts": 1,
+      "clusterRelocationsDuringMove": 0,
+      "maxClusterJumpPx": 0
+    },
+    {
+      "scenario": "edge",
+      "zoom": 12,
+      "width": 375,
+      "height": 812,
+      "frames": 336,
+      "layoutsDuringMove": 0,
+      "totalLayouts": 1,
+      "clusterRelocationsDuringMove": 0,
+      "maxClusterJumpPx": 0
+    },
+    {
+      "scenario": "zoom",
+      "zoom": 12,
+      "width": 375,
+      "height": 812,
+      "frames": 331,
+      "layoutsDuringMove": 0,
+      "totalLayouts": 1,
+      "clusterRelocationsDuringMove": 0,
+      "maxClusterJumpPx": 0
+    },
+    {
+      "scenario": "reverse",
+      "zoom": 12,
+      "width": 375,
+      "height": 812,
+      "frames": 319,
+      "layoutsDuringMove": 0,
+      "totalLayouts": 1,
+      "clusterRelocationsDuringMove": 0,
+      "maxClusterJumpPx": 0
+    }
+  ],
+  "notes": "States may only downgrade during gestures. One settled layout may restore them. Idle collapse animations remain supported. The separate 60-case frame suite checks monotonic states, ghost absence during gestures, immutable cluster anchors and frozen layout revisions."
+}

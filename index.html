@@ -690,7 +690,7 @@ function repositionMapElements(){
  if(document.getElementById('newLogicToggle').checked)repositionNewTileClusters();
 }
 function render(){renderMapPins();if(typeof renderSelectedMarker==='function')renderSelectedMarker();if(typeof scheduleOfferRefresh==='function')scheduleOfferRefresh();}
-function renderMapPins(){const layer=document.getElementById('markers');updateMobileHud();if(mapReady&&document.getElementById('newLogicToggle').checked){renderNewTilePins(layer,getRenderPoints());renderTiles();return;}layer.innerHTML='';if(mapReady && (mode==='cluster'||mode==='hybrid')){const tileZoom=getQuadkeyZoom(map.getZoom());renderTileClusters(layer,getRenderPoints(),tileZoom);renderTiles();return;}if(mapReady){renderExpandedPins(layer);renderTiles();return;}let sorted=[...getRenderPoints()].sort((a,b)=>score(b)-score(a));let placed=[],hidden=0,compact=0,full=0;let minGap=zoom>=17?48:zoom>=15?58:72;
+function renderMapPins(){const layer=document.getElementById('markers');updateMobileHud();if(mapReady&&document.getElementById('newLogicToggle').checked){renderNewTilePins(layer,getRenderPoints());renderTiles();return;}resetNewPinMotion();layer.innerHTML='';if(mapReady && (mode==='cluster'||mode==='hybrid')){const tileZoom=getQuadkeyZoom(map.getZoom());renderTileClusters(layer,getRenderPoints(),tileZoom);renderTiles();return;}if(mapReady){renderExpandedPins(layer);renderTiles();return;}let sorted=[...getRenderPoints()].sort((a,b)=>score(b)-score(a));let placed=[],hidden=0,compact=0,full=0;let minGap=zoom>=17?48:zoom>=15?58:72;
 for(let p of sorted){let projected=mapReady?projectActive([p.lng,p.lat]):{x:p.x*layer.clientWidth,y:p.y*layer.clientHeight};let px=projected.x,py=projected.y;
  let selected=p.selected,near=placed.find(q=>Math.hypot(q.px-px,q.py-py)<minGap);
  let compactState=false,hide=false;
@@ -725,11 +725,12 @@ function initMap(){
  new maplibregl.Marker({element:userPin,anchor:'center'}).setLngLat(USER_LOCATION).addTo(map);
  map.on('load',()=>{mapReady=true;document.getElementById('notice').style.display='none';render()});
  map.on('style.load',()=>{document.getElementById('notice').style.display='none';render()});
+ map.on('movestart',beginNewPinMotion);
  map.on('move',()=>{
   // Move the existing DOM with the camera. Do not rebuild tile clusters during a gesture.
   repositionMapElements();renderTiles();updateMobileHud();
  });
- map.on('moveend',()=>{render();});
+ map.on('moveend',()=>{if(newPinModeEnabled())settleNewPinMotion();else render();});
  map.on('zoom',()=>{
   zoom=getAppZoom(map.getZoom());zoomInput.value=String(zoom);zoomVal.textContent=String(zoom);
  });
@@ -768,12 +769,13 @@ function fitInitialNewLogicArea(){
  if(camera)map.easeTo({...camera,padding:getMapPadding(),duration:550});
 }
 document.getElementById('newLogicToggle').onchange=()=>{
- render();
+ resetNewPinMotion();render();
 };
 makePoints(2000);makeGoodsPoints();
 
 </script>
-<script src="new-pins.js?v=20261105-partners2000-final"></script>
-<script src="sheets.js?v=20261105-partners2000-final"></script>
+<script src="new-pins.js?v=20261105-motion-stable2"></script>
+<script src="new-pin-motion.js?v=20261105-motion-stable"></script>
+<script src="sheets.js?v=20261105-motion-stable"></script>
 <script>initSheets();initMap();connectSheetsToMap();</script>
 </body></html>

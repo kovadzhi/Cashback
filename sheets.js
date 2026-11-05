@@ -387,7 +387,7 @@ function initSheets(){
  for(const p of points){if(PARTNER_INFO[p.name])p.category=PARTNER_INFO[p.name][0];}
  document.getElementById('closeDetail').onclick=closeSelectedOffer;
  document.getElementById('newLogicToggle').onchange=()=>{
-  render();
+  resetNewPinMotion();render();
  };
  document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSelectedOffer();});
  attachSheetGesture(sheetElements.offers,'list');attachSheetGesture(sheetElements.detail,'detail');

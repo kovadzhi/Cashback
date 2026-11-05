@@ -29,18 +29,15 @@ function newPinSafeRect(rect){
 function newPinRectsOverlap(a,b){
  return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
 }
-function newPinInsideViewport(rect,viewport){
- return rect.left>=viewport.left&&rect.top>=viewport.top&&rect.right<=viewport.right&&rect.bottom<=viewport.bottom;
+function newPinInsideViewport(rect,viewport,margin=0){
+ return rect.left>=viewport.left+margin&&rect.top>=viewport.top+margin&&rect.right<=viewport.right-margin&&rect.bottom<=viewport.bottom-margin;
 }
 function repositionNewTileClusters(){
  document.querySelectorAll('.new-tile-cluster').forEach(el=>{
   const pt=projectActive([Number(el.dataset.lng),Number(el.dataset.lat)]);
   el.style.left=pt.x+'px';el.style.top=pt.y+'px';
  });
- // Reassign text slots as a label crosses an edge during a gesture, before
- // the browser paints it clipped. Preserve the same keyed DOM commit path.
- const layer=document.getElementById('markers'),viewport=layer.getBoundingClientRect();
- if([...layer.querySelectorAll('.new-tile-pin[data-state="expanded"]')].some(el=>!newPinInsideViewport(el.getBoundingClientRect(),viewport)))renderNewTilePins(layer,getRenderPoints());
+ if(newPinMotion.active||map.isMoving())constrainNewPinsDuringMotion();
 }
 function newTileNodeKey(el){
  if(el.classList.contains('new-tile-pin'))return 'pin:'+el.dataset.pinId;
@@ -55,12 +52,13 @@ function commitNewTilePins(layer,staging){
   if(!current){layer.append(next);retained.add(next);continue;}
   // Keep the marker and decoded logo in place. Apply only its final state;
   // no visible expanded measurement or opacity/width animation is exposed.
-  const shrinking=current.dataset.state!=='dot'&&next.dataset.state==='dot';
+  const shrinking=!newPinMotion.active&&!map.isMoving()&&current.dataset.state!=='dot'&&next.dataset.state==='dot';
   const ghostSource=shrinking?current.cloneNode(true):null;
   const previousWidth=current.getBoundingClientRect().width;
   const previousHeight=current.getBoundingClientRect().height;
   current.getAnimations().forEach(animation=>animation.cancel());
   current.className=next.className;current.style.cssText=next.style.cssText;
+  for(const name of Object.keys(current.dataset))if(!(name in next.dataset))delete current.dataset[name];
   for(const [name,value] of Object.entries(next.dataset))current.dataset[name]=value;
   current.title=next.title;current.onclick=next.onclick;
   const image=current.querySelector('img'),nextImage=next.querySelector('img');
@@ -99,6 +97,17 @@ function commitNewTilePins(layer,staging){
  staging.remove();
 }
 function renderNewTilePins(layer,source){
+ if(map.isMoving()&&!newPinMotion.active)beginNewPinMotion();
+ if(newPinMotion.active&&newPinMotion.hasLayout){
+  // Closing/changing a selected offer must still clear its old marker immediately.
+  const selectedId=source.find(p=>p.selected)?.pinId;
+  layer.querySelectorAll('.marker.selected').forEach(el=>{if(el.dataset.pinId!==String(selectedId))el.remove();});
+  constrainNewPinsDuringMotion();return;
+ }
+ const previousExpanded=new Set([...layer.querySelectorAll('.new-tile-pin[data-state="expanded"]')].map(el=>el.dataset.pinId));
+ const preferredText=new Set([...previousExpanded,...newPinMotion.preferredText]);
+ const compareStable=(a,b)=>(Number(b.partnerWeight)||0)-(Number(a.partnerWeight)||0)||
+  Number(preferredText.has(String(b.pinId)))-Number(preferredText.has(String(a.pinId)))||Number(a.pinId)-Number(b.pinId);
  const staging=document.createElement('div');
  staging.className='new-pin-staging';
  staging.style.cssText='position:absolute;inset:0;visibility:hidden;pointer-events:none';
@@ -109,7 +118,7 @@ function renderNewTilePins(layer,source){
   const pt=projectActive([p.lng,p.lat]);
   return pt.x>=0&&pt.x<=size.clientWidth&&pt.y>=0&&pt.y<=size.clientHeight;
  };
- const candidates=plan.logos.slice().sort(compareNewPinWeight);
+ const candidates=plan.logos.slice().sort(compareStable);
  const expandedPartners=new Set(),secondaryPartners=new Set();
  const compactByPartner=new Map();
  const occupied=[],entries=[];
@@ -149,7 +158,7 @@ function renderNewTilePins(layer,source){
  // viewport and collision checks succeed, so blocked high weights cannot
  // prevent lower weights from filling the minimum four (up to six) labels.
  const viewport=layer.getBoundingClientRect();
- const fullyInside=rect=>newPinInsideViewport(rect,viewport);
+ const fullyInside=(rect,p)=>newPinInsideViewport(rect,viewport,previousExpanded.has(String(p.pinId))?0:NEW_PIN_REVEAL_MARGIN);
  for(const entry of entries)entry.fullRect=entry.el.getBoundingClientRect();
  function accept(entry,state){
   const {p,el}=entry;
@@ -199,7 +208,7 @@ function renderNewTilePins(layer,source){
   return true;
  }
  // All pin sizes and clusters compete by weight; dots never reserve space.
- entries.sort((a,b)=>compareNewPinWeight(a.p,b.p));
+ entries.sort((a,b)=>compareStable(a.p,b.p));
  for(const entry of entries){
   const {p,el}=entry;
   if(entry.type==='cluster'){
@@ -212,7 +221,7 @@ function renderNewTilePins(layer,source){
   }
   el.querySelector('.pill').style.width=entry.fullRect.width+'px';
   function fits(){return !occupied.some(rect=>newPinRectsOverlap(rect,newPinSafeRect(el.getBoundingClientRect())));}
-  let state=expanded<6&&!expandedPartners.has(p.name)&&inViewport(p)&&fullyInside(entry.fullRect)&&fits()?'expanded':'compact';
+  let state=expanded<6&&!expandedPartners.has(p.name)&&inViewport(p)&&fullyInside(entry.fullRect,p)&&fits()?'expanded':'compact';
   if(state==='compact'){
    el.classList.add('compact','new-logic-compact');el.querySelector('.pill').style.width='28px';
   }
@@ -223,7 +232,7 @@ function renderNewTilePins(layer,source){
  // labels survived, promote lower-weight reserve points, including members
  // of clusters, without losing or double-counting any source point.
  const promoted=new Set();
- const reserves=plan.dots.concat(plan.clusters.flatMap(tile=>tile.items)).sort(compareNewPinWeight);
+ const reserves=plan.dots.concat(plan.clusters.flatMap(tile=>tile.items)).sort(compareStable);
  for(const p of reserves){
   if(expanded>=4)break;
   if(expandedPartners.has(p.name)||!inViewport(p))continue;
@@ -235,7 +244,7 @@ function renderNewTilePins(layer,source){
   // or an already expanded offer. Dots do not reserve space.
   const blocked=blockers.some(rect=>!rect.owner||rect.owner.type!=='pin'||
    rect.owner.el.dataset.state!=='compact'||compareNewPinWeight(p,rect.owner.p)>=0);
-  if(!fullyInside(entry.fullRect)||blocked){entry.el.remove();continue;}
+  if(!fullyInside(entry.fullRect,p)||blocked){entry.el.remove();continue;}
   if(ownCluster){const index=occupied.findIndex(rect=>rect.owner===ownCluster);if(index>=0)occupied.splice(index,1);}
   for(const rect of blockers){
    occupied.splice(occupied.indexOf(rect),1);compact--;dot(rect.owner);
@@ -263,7 +272,17 @@ function renderNewTilePins(layer,source){
   }
  }
  plan.dots.filter(p=>!promoted.has(p.pinId)).forEach(p=>dot(marker(p)));
+ // Keep a small, inert dot buffer ready outside the active viewport. New
+ // regions revealed during a gesture do not need an intermediate layout.
+ const represented=new Set(plan.logos.concat(plan.dots,plan.clusters.flatMap(tile=>tile.items)).map(p=>p.pinId));
+ for(const p of source){
+  if(p.selected||represented.has(p.pinId))continue;
+  const pt=projectActive([p.lng,p.lat]);
+  if(pt.x< -128||pt.y< -128||pt.x>size.clientWidth+128||pt.y>size.clientHeight+128)continue;
+  const entry=marker(p);entry.el.classList.add('new-pin-overscan');dot(entry);
+ }
  commitNewTilePins(layer,staging);
+ newPinMotion.hasLayout=true;newPinMotion.revision++;
  document.getElementById('shown').textContent=expanded+compact+dots;
  document.getElementById('compactCount').textContent=compact;
  document.getElementById('hiddenCount').textContent=clustered;
