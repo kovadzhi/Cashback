@@ -1,32 +1,6 @@
 /* Only the new-logic switch uses this tile/ranking pipeline. */
-const newPartnerDotColors=new Map();
-const newDotColorsReady=Promise.all(brands.map(brand=>new Promise(resolve=>{
- const image=new Image();
- image.onload=()=>{
-  // Sample the outer ring of the circular logo, away from its central lettering
-  // and transparent corners. The most frequent colour is its background.
-  const canvas=document.createElement('canvas');canvas.width=canvas.height=40;
-  const context=canvas.getContext('2d',{willReadFrequently:true});
-  context.drawImage(image,0,0,40,40);
-  const pixels=context.getImageData(0,0,40,40).data,buckets=new Map();
-  for(let y=0;y<40;y++)for(let x=0;x<40;x++){
-   const radius=Math.hypot(x-19.5,y-19.5),i=(y*40+x)*4;
-   if(radius<12||radius>17||pixels[i+3]<230)continue;
-   const rgb=[pixels[i],pixels[i+1],pixels[i+2]];
-   const key=rgb.map(value=>Math.round(value/16)).join(',');
-   const bucket=buckets.get(key)||{count:0,sum:[0,0,0]};
-   bucket.count++;rgb.forEach((value,k)=>bucket.sum[k]+=value);buckets.set(key,bucket);
-  }
-  const background=[...buckets.values()].sort((a,b)=>b.count-a.count)[0];
-  newPartnerDotColors.set(brand[0],background?
-   '#'+background.sum.map(value=>Math.round(value/background.count).toString(16).padStart(2,'0')).join(''):brand[2]);
-  resolve();
- };
- image.onerror=()=>{newPartnerDotColors.set(brand[0],brand[2]);resolve();};
- image.src=brand[5];
-}))).then(()=>{
- if(brands.length&&mapReady&&document.getElementById('newLogicToggle').checked)render();
-});
+const newPartnerDotColors=new Map(brands.map(brand=>[brand[0],brand[2]]));
+const newDotColorsReady=Promise.resolve();
 
 function compareNewPinWeight(a,b){
  return (Number(b.partnerWeight)||0)-(Number(a.partnerWeight)||0)||Number(a.pinId)-Number(b.pinId);
@@ -81,6 +55,11 @@ function commitNewTilePins(layer,staging){
   if(!current){layer.append(next);retained.add(next);continue;}
   // Keep the marker and decoded logo in place. Apply only its final state;
   // no visible expanded measurement or opacity/width animation is exposed.
+  const shrinking=current.dataset.state!=='dot'&&next.dataset.state==='dot';
+  const ghostSource=shrinking?current.cloneNode(true):null;
+  const previousWidth=current.getBoundingClientRect().width;
+  const previousHeight=current.getBoundingClientRect().height;
+  current.getAnimations().forEach(animation=>animation.cancel());
   current.className=next.className;current.style.cssText=next.style.cssText;
   for(const [name,value] of Object.entries(next.dataset))current.dataset[name]=value;
   current.title=next.title;current.onclick=next.onclick;
@@ -94,9 +73,29 @@ function commitNewTilePins(layer,staging){
    target.style.cssText=value.style.cssText;
    if(selector!=='.pill'&&target.textContent!==value.textContent)target.textContent=value.textContent;
   }
+  if(shrinking&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+   // Animate an inert visual copy; the live hit target and collision plan
+   // immediately use the final dot geometry. Retained nodes never flash.
+   const ghost=ghostSource;
+   ghost.className='marker new-pin-collapse-ghost'+(ghostSource.classList.contains('compact')?' compact':'');
+   ghost.removeAttribute('data-pin-id');ghost.removeAttribute('data-state');
+   ghost.style.width=previousWidth+'px';ghost.style.height=previousHeight+'px';
+   ghost.style.pointerEvents='none';ghost.setAttribute('aria-hidden','true');
+   const pill=ghost.querySelector('.pill');
+   pill.style.width=previousWidth+'px';pill.style.height=previousHeight+'px';
+
+   layer.parentElement.append(ghost);
+   const animation=ghost.animate([
+    {width:previousWidth+'px',height:previousHeight+'px',borderRadius:'52px',transform:'translate(-18px,-50%)',opacity:1},
+    {width:'16px',height:'16px',borderRadius:'50%',transform:'translate(-8px,-50%)',opacity:0}
+   ],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'});
+   pill.animate([{width:previousWidth+'px',height:previousHeight+'px'},{width:'16px',height:'16px',backgroundColor:next.querySelector('.pill').style.backgroundColor}],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'});
+   ghost.querySelectorAll('.logo-wrap,.pin-copy').forEach(child=>child.animate([{opacity:1},{opacity:0,transform:'scale(.4)'}],{duration:200,fill:'forwards'}));
+   animation.finished.catch(()=>{}).finally(()=>ghost.remove());
+  }
   retained.add(current);
  }
- for(const el of [...layer.children])if(el!==staging&&!retained.has(el))el.remove();
+ for(const el of [...layer.children])if(el!==staging&&!retained.has(el)&&!el.classList.contains('new-pin-collapse-ghost'))el.remove();
  staging.remove();
 }
 function renderNewTilePins(layer,source){

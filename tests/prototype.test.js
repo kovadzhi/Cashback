@@ -8,8 +8,14 @@
  const cameraUnchanged=before=>Math.abs(map.getZoom()-before.zoom)<1e-8&&map.getCenter().toArray().every((v,i)=>Math.abs(v-before.center[i])<1e-8)&&Math.abs(map.project(USER_LOCATION).x-before.point.x)<.01&&Math.abs(map.project(USER_LOCATION).y-before.point.y)<.01;
  try{
   await settle();
-  check('47 партнёров имеют категории и описания',brands.length===47&&brands.every(b=>PARTNER_INFO[b[0]]?.length===3));
-  check('1200 партнёрских точек',points.length===1200);
+  check('147 партнёров имеют категории и описания',brands.length===147&&brands.every(b=>PARTNER_INFO[b[0]]?.length===3));
+  check('2000 партнёрских точек',points.length===2000);
+  const counts=new Map();for(const p of points)counts.set(p.name,(counts.get(p.name)||0)+1);
+  check('У малого бизнеса 1–5 точек',PARTNERS.filter(p=>p.service==='Self Service').every(p=>counts.get(p.name)>=1&&counts.get(p.name)<=5));
+  check('У крупных партнёров больше пяти точек',PARTNERS.filter(p=>p.service==='Full Service').every(p=>counts.get(p.name)>5));
+  check('У всех точек уникальны адреса и здания',new Set(points.map(p=>p.address)).size===2000&&new Set(points.map(p=>p.buildingId)).size===2000);
+  check('Нет пересечений ID с товарными пинами',new Set(points.concat(goodsPoints).map(p=>p.pinId)).size===points.length+goodsPoints.length);
+  check('Условия и цвета едины на партнёра',points.every(p=>['cash','maxBonuses','untilDay','condition','closingHour','color'].every(key=>p[key]===partnerByName.get(p.name)[key])));
   check('Кэшбэк 10–40%, шаг 5%',points.every(p=>p.cash>=10&&p.cash<=40&&p.cash%5===0));
   check('Кэшбэк един для всех точек партнёра',points.every(p=>p.cash===partnerCashbacks.get(p.name)));
   check('Шапка 44 px без системного статус-бара',near(document.querySelector('.screen-header').getBoundingClientRect().height,44)&&!document.querySelector('.status-bar'));
@@ -116,6 +122,10 @@
   check('Скругления карточки пина 20 px',getComputedStyle(sheetElements.detail).borderTopLeftRadius==='20px'&&getComputedStyle(sheetElements.detail).borderTopRightRadius==='20px');
   check('Партнёрский кэшбэк в карточке',document.getElementById('detailCash').textContent==='Кэшбэк '+cashBefore+'%');
   check('Категория и описание выбранного партнёра',document.getElementById('detailCategory').textContent===PARTNER_INFO[chosen.name][0]&&document.getElementById('detailAbout').textContent===PARTNER_INFO[chosen.name][1]);
+  check('В карточке адрес выбранного здания',document.getElementById('detailAddress').textContent===chosen.address);
+  check('В карточке максимум бонусов партнёра',document.getElementById('detailLimit').textContent===`Максимум — ${chosen.maxBonuses} бонусов`);
+  check('В карточке условие и ноябрьская дата',document.getElementById('detailTerms').textContent===`${chosen.condition} до ${chosen.untilDay} ноября`);
+  check('В карточке время работы партнёра',document.getElementById('detailHours').textContent===`Ежедневно 08:00 – ${String(chosen.closingHour).padStart(2,'0')}:00`);
   check('Логотип выбранного партнёра',document.getElementById('detailLogo').getAttribute('src')===chosen.logo);
   check('Выбранный пин единственный',document.querySelectorAll('.marker.selected').length===1);
   const toggle=document.getElementById('newLogicToggle');toggle.checked=true;toggle.onchange();await settle();

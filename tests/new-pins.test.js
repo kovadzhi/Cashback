@@ -88,6 +88,7 @@ async function runNewPinTests(check,settle){
  check('Новая логика: смена точки на полный пин сохраняет узел и изображение',state(31)==='expanded'&&layer.querySelector('[data-pin-id="10031"]')===transitioning&&transitioning.querySelector('img')===stableImage);
  renderNewTilePins(layer,[lower,highest]);
  check('Новая логика: смена полного пина на точку сразу даёт 16 px',state(31)==='dot'&&Math.abs(transitioning.getBoundingClientRect().width-16)<.1&&getComputedStyle(transitioning).opacity==='1');
+ check('Уменьшение пина до точки сопровождается анимацией',matchMedia('(prefers-reduced-motion: reduce)').matches||document.querySelector('.new-pin-collapse-ghost')?.getAnimations().some(a=>a.playState==='running'));
  layer.innerHTML='';renderNewTilePins(layer,[highest,make(32,60,110,180)]);
  check('Новая логика: зазор учитывает 8 px с каждой стороны обоих пинов',state(30)==='expanded'&&state(32)==='dot');
  layer.innerHTML='';renderNewTilePins(layer,sameTile);
@@ -98,7 +99,7 @@ async function runNewPinTests(check,settle){
  check('Новая логика: движение не пересоздаёт кластер и не меняет его якорь',cluster?.isConnected&&cluster.style.cssText===before);
  const clusterSafe=[...layer.querySelectorAll('.marker:not(.partner-dot),.cluster')].map(el=>newPinSafeRect(el.getBoundingClientRect()));
  check('Новая логика: кластеры также не накладываются на пины',clusterSafe.every((a,i)=>clusterSafe.slice(i+1).every(b=>!newPinRectsOverlap(a,b))));
- check('Новая логика: цвета получены для всех 47 логотипов',newPartnerDotColors.size===47&&[...newPartnerDotColors.values()].every(color=>/^#[0-9a-f]{6}$/i.test(color)));
+ check('Новая логика: цвета получены для всех 147 партнёров',newPartnerDotColors.size===147&&[...newPartnerDotColors.values()].every(color=>/^#[0-9a-f]{6}$/i.test(color)));
  check('Новая логика: разные фоны дают разные цвета точек',new Set(newPartnerDotColors.values()).size>10);
  // Real data at several zooms: preserve every point in complete visible tiles.
  for(const zoom of [10,12,14,17,22]){

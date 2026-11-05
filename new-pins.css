@@ -5,3 +5,7 @@
  animation: none !important;
  transition: none !important;
 }
+
+.new-pin-collapse-ghost{overflow:hidden;pointer-events:none!important;z-index:5}
+.new-pin-collapse-ghost .pill{overflow:hidden;min-width:0!important}
+@media(prefers-reduced-motion:reduce){.new-pin-collapse-ghost{display:none}}

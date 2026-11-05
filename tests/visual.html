@@ -10,6 +10,7 @@
 
  const script='<script>map.stop();'+({
   empty:"map.jumpTo({center:[38.3,55.8],zoom:14});render();",
+  self:"selectPoint(points.find(p=>p.service==='Self Service'));",
   selected:"selectPoint(points.find(p=>p.name==='Штолле'));",
   old:"map.jumpTo({center:USER_LOCATION,zoom:13});render();",
   tiles:"document.getElementById('newLogicToggle').checked=true;document.getElementById('showTiles').checked=true;map.jumpTo({center:USER_LOCATION,zoom:11});render();",

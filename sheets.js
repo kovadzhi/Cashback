@@ -183,7 +183,9 @@ function refreshOfferList(){
   const name=document.createElement('span');name.className='offer-name';name.textContent=p.name;
   const cash=document.createElement('span');cash.className='offer-cash';cash.textContent=p.cash+'%';
   title.append(name,cash);
-  const terms=document.createElement('span');terms.className='offer-terms';terms.innerHTML='На одну покупку<br>До 5 апреля';
+  const terms=document.createElement('span');terms.className='offer-terms';
+  const offer=partnerByName.get(p.name)||p;
+  terms.append(document.createTextNode(offer.condition||'За покупки на кассе'),document.createElement('br'),document.createTextNode(`До ${offer.untilDay||30} ноября`));
   const category=document.createElement('span');category.className='offer-category';category.textContent=PARTNER_INFO[p.name]?.[0]||p.category;
   copy.append(title,terms,category);row.append(avatar,copy);
   row.onclick=()=>selectPoint(p);fragment.append(row);
@@ -236,6 +238,12 @@ function selectPoint(p){
  document.getElementById('detailCategory').textContent=info?.[0]||p.category;
  document.getElementById('detailAbout').textContent=info?.[1]||'';
  document.getElementById('detailCash').textContent='Кэшбэк '+p.cash+'%';
+ const offer=partnerByName.get(p.name)||p;
+ document.getElementById('detailTerms').textContent=`${offer.condition||'За покупки на кассе'} до ${offer.untilDay||30} ноября`;
+ document.getElementById('detailLimit').textContent=`Максимум — ${offer.maxBonuses||800} бонусов`;
+ document.getElementById('detailAddress').textContent=p.address||'';
+ document.getElementById('detailHours').textContent=`Ежедневно 08:00 – ${String(offer.closingHour??21).padStart(2,'0')}:00`;
+
  const logo=document.getElementById('detailLogo');logo.src=p.logo;logo.alt=p.name;
  sheetElements.detailScroll.scrollTop=0;sheetElements.wrap.classList.add('detail-open');
  sheetElements.offers.inert=true;sheetElements.offers.setAttribute('aria-hidden','true');

@@ -1,0 +1,19 @@
+2026-11-05 — partners update
+153 integration checks PASS; 0 failures (tests/last-run.txt).
+13 partner data checks PASS (tests/partner-data-last-run.txt).
+60 motion scenarios PASS across 6 viewport sizes; 3100 frames,
+99835 live geometry measurements; no artifacts.
+
+Visual review: 375x812 partner map, 390x844 Self Service card,
+320x568 Full Service card. Screenshots are in tests/screenshots/.
+Checked logos, placeholders, dot colours, selected pin, card text,
+address, opening hours, offer consistency and small-screen wrapping.
+All 2000 locations also pass point-in-building checks against OSM footprints.
+
+External vector tiles did not complete loading in the test browsers.
+To review geographic placement, a temporary local raster test basemap
+was rendered from the downloaded OSM roads and building outlines.
+This verification basemap is only a QA fixture; the product's vector
+style, source URLs, and map controls are unchanged.
+Actual occupancy of the assigned brands is not verified: branch placement,
+offers and opening hours are generated prototype data.

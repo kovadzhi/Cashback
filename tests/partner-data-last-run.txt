@@ -1,0 +1,14 @@
+PASS: 147 distinct archive partners
+PASS: 2000 distinct addresses and buildings
+PASS: Every coordinate inside its addressed building footprint
+PASS: Central/outer 1334/666
+PASS: Cashback domain
+PASS: Maximum bonuses domain
+PASS: November dates and conditions
+PASS: Opening hours
+PASS: Three description lines
+PASS: Every logo exists
+PASS: Full Service sources
+PASS: Full Service weights exceed Self Service
+PASS: All JavaScript parses
+13 checks passed
