@@ -191,6 +191,7 @@
   await Promise.all(images.map(img=>img.decode().catch(()=>{})));
   check('Все статические изображения загружены',images.every(img=>img.complete&&img.naturalWidth>0));
   check('Нет горизонтального переполнения',document.documentElement.scrollWidth===375);
+  await runNewPinTests(check,settle);
   parent.reportTest('Проверки завершены',true);
  }catch(error){parent.reportTest('Исключение в тестах',false,error.stack);}
 })();

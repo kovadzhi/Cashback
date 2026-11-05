@@ -3,11 +3,17 @@
 (async()=>{
  const html=await(await fetch('../index.html')).text();
  const base=new URL('../',location.href).href;
- const scene=new URLSearchParams(location.search).get('scene')||'new';
+ const params=new URLSearchParams(location.search);
+ const scene=params.get('scene')||'new';
+ const frame=document.querySelector('iframe');
+ if(params.has('width')){frame.style.width=Number(params.get('width'))+'px';frame.style.height=(Number(params.get('height'))||812)+'px';}
+
  const script='<script>map.stop();'+({
   empty:"map.jumpTo({center:[38.3,55.8],zoom:14});render();",
   selected:"selectPoint(points.find(p=>p.name==='Штолле'));",
   old:"map.jumpTo({center:USER_LOCATION,zoom:13});render();",
+  tiles:"document.getElementById('newLogicToggle').checked=true;document.getElementById('showTiles').checked=true;map.jumpTo({center:USER_LOCATION,zoom:11});render();",
+  dense:"document.getElementById('newLogicToggle').checked=true;map.jumpTo({center:USER_LOCATION,zoom:11});render();",
   new:"document.getElementById('newLogicToggle').checked=true;fitInitialNewLogicArea();render();"
  }[scene]||'render();')+'<'+'/script>';
  document.querySelector('iframe').srcdoc=html.replace('<head>','<head><base href="'+base+'">').replace('</body>',script+'</body>');
