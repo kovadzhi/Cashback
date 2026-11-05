@@ -44,6 +44,42 @@ async function runNewPinTests(check,settle){
  }
  renderNewTilePins(layer,[make(40,viewportWidth-8,65,300,fixture[0].name),...fixture.slice(0,6)]);
  check('Новая логика: другой пин того же партнёра может получить текст',state(40)==='compact'&&state(0)==='expanded');
+ // The first six nominal text candidates collide. Lower weights must still
+ // be tried until at least four real, non-overlapping labels are on screen.
+ const crowded=Array.from({length:6},(_,i)=>make(50+i,60,65,300-i,'High '+i));
+ const replacements=Array.from({length:5},(_,i)=>make(60+i,60,200+i*90,90-i,'Lower '+i));
+ renderNewTilePins(layer,[...crowded,...replacements]);
+ const actualText=[...layer.querySelectorAll('[data-state="expanded"]')];
+ check('Новая логика: коллизии высоких весов не мешают раскрыть минимум четыре пина',actualText.length>=4);
+ check('Новая логика: максимальный вес сохраняет текстовый приоритет',state(50)==='expanded');
+ check('Новая логика: свободные текстовые места получают меньшие веса',actualText.filter(el=>Number(el.dataset.pinId)>=10060).length>=3);
+ check('Новая логика: добранные текстовые пины полностью внутри вьюпорта',actualText.every(fullyInside));
+ const replacementRects=[...layer.querySelectorAll('.marker:not(.partner-dot),.cluster')].map(el=>newPinSafeRect(el.getBoundingClientRect()));
+ check('Новая логика: добор текста сохраняет безопасные зоны',replacementRects.every((rect,i)=>replacementRects.slice(i+1).every(other=>!newPinRectsOverlap(rect,other))));
+ // Force a fourth text pin to come from below the tile's top five.
+ const fullTile=getVisibleTiles(z).find(tile=>{
+  const a=projectActive(tileToLngLat(tile.x,tile.y,z)),b=projectActive(tileToLngLat(tile.x+1,tile.y+1,z));
+  return a.x<=60&&b.x>=60&&a.y>25&&b.y<viewportHeight-25;
+ });
+ const tileTop=projectActive(tileToLngLat(fullTile.x,fullTile.y,z)).y;
+ const reserveHigh=Array.from({length:6},(_,i)=>make(100+i,60,tileTop+60,400-i,'Blocked '+i));
+ const reservePoint=make(110,60,tileTop+140,100,'Reserve');
+ const reserveScene=[...reserveHigh,reservePoint,make(111,60,55,90,'Free A'),make(112,60,viewportHeight-40,80,'Free B')];
+ check('Новая логика: резервный кандидат исходно не входит в пять логотипов тайла',getNewTilePlan(reserveScene,z).dots.some(p=>p.pinId===reservePoint.pinId));
+ renderNewTilePins(layer,reserveScene);
+ check('Новая логика: резерв ниже пяти лидеров добирает четвёртый текстовый пин',layer.querySelectorAll('[data-state="expanded"]').length>=4&&state(110)==='expanded');
+ check('Новая логика: резервный добор не теряет и не дублирует точки',new Set([...layer.querySelectorAll('.marker')].map(el=>el.dataset.pinId)).size===reserveScene.length&&layer.querySelectorAll('.marker').length===reserveScene.length);
+ const clusterReserveScene=[...reserveScene,...Array.from({length:9},(_,i)=>make(120+i,60,tileTop+60,70-i,'Cluster filler '+i))];
+ renderNewTilePins(layer,clusterReserveScene);
+ check('Новая логика: четвёртый текст может получить участник кластера',layer.querySelectorAll('[data-state="expanded"]').length>=4&&state(110)==='expanded');
+ const clusterRepresented=layer.querySelectorAll('.marker').length+[...layer.querySelectorAll('.new-tile-cluster')].reduce((sum,el)=>sum+el.dataset.memberIds.split(',').length,0);
+ check('Новая логика: выделение текста из кластера сохраняет точное число точек',clusterRepresented===clusterReserveScene.length);
+ const ample=Array.from({length:8},(_,i)=>make(80+i,60,65+i*70,150-i,'Rank '+i));
+ renderNewTilePins(layer,ample);
+ check('Новая логика: добор сохраняет верхний лимит шесть',layer.querySelectorAll('[data-state="expanded"]').length===6);
+ check('Новая логика: при свободном месте текст получают шесть наивысших весов',ample.slice(0,6).every(p=>layer.querySelector(`[data-pin-id="${p.pinId}"]`)?.dataset.state==='expanded'));
+ renderNewTilePins(layer,[make(70,viewportWidth-8,65,300,'Repeated'),make(71,viewportWidth-8,155,299,'Repeated'),make(72,60,245,298,'Repeated')]);
+ check('Новая логика: после добора у партнёра остаётся один текст, один логотип и точки',state(70)==='compact'&&state(71)==='dot'&&state(72)==='expanded');
  const highest=make(30,60,65,200),lower=make(31,60,65,190);
  layer.innerHTML='';renderNewTilePins(layer,[lower,highest]);
  check('Новая логика: коллизию выигрывает максимальный вес',state(30)==='expanded'&&state(31)==='dot');

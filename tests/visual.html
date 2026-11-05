@@ -13,6 +13,7 @@
   selected:"selectPoint(points.find(p=>p.name==='Штолле'));",
   old:"map.jumpTo({center:USER_LOCATION,zoom:13});render();",
   tiles:"document.getElementById('newLogicToggle').checked=true;document.getElementById('showTiles').checked=true;map.jumpTo({center:USER_LOCATION,zoom:11});render();",
+  crowded:"document.getElementById('newLogicToggle').checked=true;map.jumpTo({center:USER_LOCATION,zoom:13});const make=(i,x,y,weight)=>{const b=brands[i];return {...points[0],id:9000+i,pinId:9000+i,name:b[0],logo:b[5],partnerWeight:weight,...map.unproject([x,y])};};points=[...Array.from({length:6},(_,i)=>make(i,60,65,300-i)),...Array.from({length:5},(_,i)=>make(6+i,60,200+i*90,90-i))];render();",
   dense:"document.getElementById('newLogicToggle').checked=true;map.jumpTo({center:USER_LOCATION,zoom:11});render();",
   new:"document.getElementById('newLogicToggle').checked=true;fitInitialNewLogicArea();render();"
  }[scene]||'render();')+'<'+'/script>';

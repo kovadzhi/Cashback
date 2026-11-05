@@ -111,8 +111,8 @@ function renderNewTilePins(layer,source){
   return pt.x>=0&&pt.x<=size.clientWidth&&pt.y>=0&&pt.y<=size.clientHeight;
  };
  const candidates=plan.logos.slice().sort(compareNewPinWeight);
- const expandedIds=new Set(),expandedPartners=new Set();
- const partnerLogoIds=new Set(),secondaryPartners=new Set();
+ const expandedPartners=new Set(),secondaryPartners=new Set();
+ const compactByPartner=new Map();
  const occupied=[],entries=[];
  let expanded=0,compact=0,dots=0,clustered=0;
  // Preserve the existing selected marker and its entire tail safety zone.
@@ -146,19 +146,35 @@ function renderNewTilePins(layer,source){
   el.style.zIndex='4';el.dataset.state='dot';pinDisplayState.set(String(p.pinId),'dot');dots++;
  }
  for(const p of candidates)entries.push({...marker(p),type:'pin'});
- // Measure full labels before assigning the six text slots. A high-weight
- // pin clipped by any viewport edge stays a logo and does not consume a slot.
+ // Every tile winner may fill a text slot. A slot is consumed only after
+ // viewport and collision checks succeed, so blocked high weights cannot
+ // prevent lower weights from filling the minimum four (up to six) labels.
  const viewport=layer.getBoundingClientRect();
  const fullyInside=rect=>newPinInsideViewport(rect,viewport);
- for(const entry of entries){
-  entry.fullRect=entry.el.getBoundingClientRect();
-  if(expandedPartners.size===6||expandedPartners.has(entry.p.name)||
-     !inViewport(entry.p)||!fullyInside(entry.fullRect))continue;
-  expandedPartners.add(entry.p.name);expandedIds.add(entry.p.pinId);
- }
- for(const p of candidates.filter(inViewport)){
-  if(!expandedPartners.has(p.name)||expandedIds.has(p.pinId)||secondaryPartners.has(p.name))continue;
-  secondaryPartners.add(p.name);partnerLogoIds.add(p.pinId);
+ for(const entry of entries)entry.fullRect=entry.el.getBoundingClientRect();
+ function accept(entry,state){
+  const {p,el}=entry;
+  occupied.push({...newPinSafeRect(el.getBoundingClientRect()),owner:entry});
+  if(state==='expanded'){
+   expandedPartners.add(p.name);
+   // A later, fully visible point may become this partner's primary. Retain
+   // only its highest-ranked visible secondary logo; further repeats are dots.
+   const earlier=(compactByPartner.get(p.name)||[]).filter(item=>item.el.dataset.state==='compact');
+   const secondary=earlier.find(item=>inViewport(item.p));
+   if(secondary)secondaryPartners.add(p.name);
+   for(const item of earlier){
+    if(item===secondary)continue;
+    const index=occupied.findIndex(rect=>rect.owner===item);
+    if(index>=0)occupied.splice(index,1);
+    compact--;dot(item);
+   }
+  }else{
+   if(!compactByPartner.has(p.name))compactByPartner.set(p.name,[]);
+   compactByPartner.get(p.name).push(entry);
+   if(expandedPartners.has(p.name))secondaryPartners.add(p.name);
+  }
+  el.dataset.state=state;pinDisplayState.set(String(p.pinId),state);
+  el.style.zIndex='1000';state==='expanded'?expanded++:compact++;
  }
  for(const tile of plan.clusters){
   const mean=tile.items.reduce((sum,p)=>({lng:sum.lng+p.lng/tile.count,lat:sum.lat+p.lat/tile.count}),{lng:0,lat:0});
@@ -170,43 +186,84 @@ function renderNewTilePins(layer,source){
   el.onclick=()=>map.easeTo({center:[mean.lng,mean.lat],zoom:Math.min(MAX_MAP_ZOOM,map.getZoom()+1),duration:350});
   staging.append(el);entries.push({type:'cluster',p:tile.items[0],el,tile,mean});
  }
+ function placeCluster(entry,members){
+  const {tile,el}=entry;
+  const mean=members.reduce((sum,p)=>({lng:sum.lng+p.lng/members.length,lat:sum.lat+p.lat/members.length}),{lng:0,lat:0});
+  const nw=projectActive(tileToLngLat(tile.x,tile.y,z)),se=projectActive(tileToLngLat(tile.x+1,tile.y+1,z));
+  const positions=[projectActive([mean.lng,mean.lat]),...members.map(p=>projectActive([p.lng,p.lat]))];
+  for(let y=nw.y+26;y<=se.y-26;y+=26)for(let x=nw.x+26;x<=se.x-26;x+=26)positions.push({x,y});
+  const pt=positions.find(pt=>!occupied.some(rect=>newPinRectsOverlap(rect,newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18}))));
+  if(!pt)return false;
+  const lngLat=unprojectActive([pt.x,pt.y]);el.dataset.lng=lngLat.lng;el.dataset.lat=lngLat.lat;
+  el.style.left=pt.x+'px';el.style.top=pt.y+'px';el.style.zIndex='500';
+  occupied.push({...newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18}),owner:entry});
+  return true;
+ }
  // All pin sizes and clusters compete by weight; dots never reserve space.
  entries.sort((a,b)=>compareNewPinWeight(a.p,b.p));
  for(const entry of entries){
   const {p,el}=entry;
   if(entry.type==='cluster'){
-   const {tile,mean}=entry;
-   const nw=projectActive(tileToLngLat(tile.x,tile.y,z)),se=projectActive(tileToLngLat(tile.x+1,tile.y+1,z));
-   const positions=[projectActive([mean.lng,mean.lat]),...tile.items.map(p=>projectActive([p.lng,p.lat]))];
-   // Keep the cluster inside its geographic tile if its centroid is occupied.
-   for(let y=nw.y+26;y<=se.y-26;y+=26)for(let x=nw.x+26;x<=se.x-26;x+=26)positions.push({x,y});
-   const pt=positions.find(pt=>!occupied.some(rect=>newPinRectsOverlap(rect,newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18}))));
-   if(pt){
-    const lngLat=unprojectActive([pt.x,pt.y]);el.dataset.lng=lngLat.lng;el.dataset.lat=lngLat.lat;
-    el.style.left=pt.x+'px';el.style.top=pt.y+'px';el.style.zIndex='500';
-    occupied.push(newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18}));clustered+=tile.count;
-   }else{
-    // No room for a cluster: retain its members as dots rather than overlap pins.
-    el.remove();tile.items.forEach(p=>dot(marker(p)));
-   }
+   if(placeCluster(entry,entry.tile.items))clustered+=entry.tile.count;
+   else{el.remove();entry.tile.items.forEach(p=>dot(marker(p)));}
    continue;
   }
-  if(expandedPartners.has(p.name)&&!expandedIds.has(p.pinId)&&!partnerLogoIds.has(p.pinId)){
+  if(expandedPartners.has(p.name)&&(secondaryPartners.has(p.name)||!inViewport(p))){
    dot(entry);continue;
   }
   el.querySelector('.pill').style.width=entry.fullRect.width+'px';
-  let state=expandedIds.has(p.pinId)?'expanded':'compact';
   function fits(){return !occupied.some(rect=>newPinRectsOverlap(rect,newPinSafeRect(el.getBoundingClientRect())));}
-  if(state==='expanded'&&!fits())state='compact';
+  let state=expanded<6&&!expandedPartners.has(p.name)&&inViewport(p)&&fullyInside(entry.fullRect)&&fits()?'expanded':'compact';
   if(state==='compact'){
    el.classList.add('compact','new-logic-compact');el.querySelector('.pill').style.width='28px';
   }
   if(!fits()){dot(entry);continue;}
-  occupied.push(newPinSafeRect(el.getBoundingClientRect()));
-  el.dataset.state=state;pinDisplayState.set(String(p.pinId),state);
-  el.style.zIndex='1000';state==='expanded'?expanded++:compact++;
+  accept(entry,state);
  }
- plan.dots.forEach(p=>dot(marker(p)));
+ // The tile's five logo winners are the normal pool. If fewer than four
+ // labels survived, promote lower-weight reserve points, including members
+ // of clusters, without losing or double-counting any source point.
+ const promoted=new Set();
+ const reserves=plan.dots.concat(plan.clusters.flatMap(tile=>tile.items)).sort(compareNewPinWeight);
+ for(const p of reserves){
+  if(expanded>=4)break;
+  if(expandedPartners.has(p.name)||!inViewport(p))continue;
+  const entry={...marker(p),type:'pin'};
+  entry.fullRect=entry.el.getBoundingClientRect();
+  const ownCluster=entries.find(item=>item.type==='cluster'&&item.tile.items.some(member=>member.pinId===p.pinId));
+  const blockers=occupied.filter(rect=>(!ownCluster||rect.owner!==ownCluster)&&newPinRectsOverlap(rect,newPinSafeRect(entry.fullRect)));
+  // A reserve label may displace lower-weight logos, never a higher weight
+  // or an already expanded offer. Dots do not reserve space.
+  const blocked=blockers.some(rect=>!rect.owner||rect.owner.type!=='pin'||
+   rect.owner.el.dataset.state!=='compact'||compareNewPinWeight(p,rect.owner.p)>=0);
+  if(!fullyInside(entry.fullRect)||blocked){entry.el.remove();continue;}
+  if(ownCluster){const index=occupied.findIndex(rect=>rect.owner===ownCluster);if(index>=0)occupied.splice(index,1);}
+  for(const rect of blockers){
+   occupied.splice(occupied.indexOf(rect),1);compact--;dot(rect.owner);
+  }
+  const previous=[...staging.querySelectorAll('.partner-dot')].find(el=>el.dataset.pinId===String(p.pinId));
+  if(previous){previous.remove();dots--;}
+  entry.el.querySelector('.pill').style.width=entry.fullRect.width+'px';
+  accept(entry,'expanded');promoted.add(p.pinId);
+ }
+ for(const entry of entries.filter(item=>item.type==='cluster'&&item.el.isConnected)){
+  const remaining=entry.tile.items.filter(p=>!promoted.has(p.pinId));
+  if(remaining.length===entry.tile.count)continue;
+  clustered-=entry.tile.count-remaining.length;
+  const oldIndex=occupied.findIndex(rect=>rect.owner===entry);
+  if(oldIndex>=0)occupied.splice(oldIndex,1);
+  if(remaining.length<=10||!placeCluster(entry,remaining)){
+   entry.el.remove();clustered-=remaining.length;
+   const index=occupied.findIndex(rect=>rect.owner===entry);
+   if(index>=0)occupied.splice(index,1);
+   remaining.forEach(p=>dot(marker(p)));
+  }else{
+   entry.el.dataset.memberIds=remaining.map(p=>p.pinId).join(',');
+   entry.el.querySelector('.cluster-count-text').textContent=remaining.length>99?'99+':String(remaining.length);
+   entry.el.title=`Кластер · ${remaining.length} точек · тайл ${entry.tile.key}`;
+  }
+ }
+ plan.dots.filter(p=>!promoted.has(p.pinId)).forEach(p=>dot(marker(p)));
  commitNewTilePins(layer,staging);
  document.getElementById('shown').textContent=expanded+compact+dots;
  document.getElementById('compactCount').textContent=compact;
