@@ -1,9 +1,10 @@
 // Archive names are normalized to NFC; offer data are prototype fixtures.
+// Point colours are sampled from the background ring of each displayed logo.
 const PARTNERS = [
  {
   "name": "Вай мясо халяль",
   "short": "Вм",
-  "color": "#5f2e9e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/000.png",
   "service": "Self Service",
@@ -18,7 +19,7 @@ const PARTNERS = [
  {
   "name": "Наша Аптека",
   "short": "НА",
-  "color": "#7c9e2e",
+  "color": "#059a4d",
   "category": "Аптека",
   "logo": "assets/partners/001.png",
   "service": "Full Service",
@@ -33,7 +34,7 @@ const PARTNERS = [
  {
   "name": "Lamoda",
   "short": "L",
-  "color": "#2e9e9e",
+  "color": "#000000",
   "category": "Одежда, обувь и аксессуары",
   "logo": "assets/partners/002.png",
   "service": "Full Service",
@@ -48,7 +49,7 @@ const PARTNERS = [
  {
   "name": "Наш трикотаж",
   "short": "Нт",
-  "color": "#2e9e98",
+  "color": "#66a3ff",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/003.png",
   "service": "Self Service",
@@ -63,7 +64,7 @@ const PARTNERS = [
  {
   "name": "Embody",
   "short": "E",
-  "color": "#2e959e",
+  "color": "#66a3ff",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/004.png",
   "service": "Self Service",
@@ -78,7 +79,7 @@ const PARTNERS = [
  {
   "name": "Шаурма Клаб",
   "short": "ШК",
-  "color": "#419e2e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/000.png",
   "service": "Self Service",
@@ -93,7 +94,7 @@ const PARTNERS = [
  {
   "name": "Место Бровисты",
   "short": "МБ",
-  "color": "#2e9e7c",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/006.png",
   "service": "Self Service",
@@ -108,7 +109,7 @@ const PARTNERS = [
  {
   "name": "Golden Green",
   "short": "GG",
-  "color": "#8f9e2e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/007.png",
   "service": "Self Service",
@@ -123,7 +124,7 @@ const PARTNERS = [
  {
   "name": "4Hands",
   "short": "4",
-  "color": "#2e599e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/008.png",
   "service": "Self Service",
@@ -138,7 +139,7 @@ const PARTNERS = [
  {
   "name": "DiezDent",
   "short": "D",
-  "color": "#9e2e42",
+  "color": "#f2f2f2",
   "category": "Стоматология",
   "logo": "assets/partners/009.png",
   "service": "Full Service",
@@ -153,7 +154,7 @@ const PARTNERS = [
  {
   "name": "TopStyle",
   "short": "T",
-  "color": "#9e972e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/010.png",
   "service": "Self Service",
@@ -168,7 +169,7 @@ const PARTNERS = [
  {
   "name": "SelSovet",
   "short": "S",
-  "color": "#9e2e44",
+  "color": "#f6f6f6",
   "category": "Дизайнерская одежда",
   "logo": "assets/partners/011.png",
   "service": "Full Service",
@@ -183,7 +184,7 @@ const PARTNERS = [
  {
   "name": "Super Volosy",
   "short": "SV",
-  "color": "#772e9e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/012.png",
   "service": "Self Service",
@@ -198,7 +199,7 @@ const PARTNERS = [
  {
   "name": "Кофе",
   "short": "К",
-  "color": "#9e6f2e",
+  "color": "#ffb74c",
   "category": "Кофейня",
   "logo": "assets/partners/013.png",
   "service": "Self Service",
@@ -213,7 +214,7 @@ const PARTNERS = [
  {
   "name": "Палитра вкусов",
   "short": "Пв",
-  "color": "#9e2e4c",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/014.png",
   "service": "Self Service",
@@ -228,7 +229,7 @@ const PARTNERS = [
  {
   "name": "Gloria Jeans",
   "short": "GJ",
-  "color": "#9e482e",
+  "color": "#848183",
   "category": "Одежда для всей семьи",
   "logo": "assets/partners/015.png",
   "service": "Full Service",
@@ -243,7 +244,7 @@ const PARTNERS = [
  {
   "name": "MDC+",
   "short": "M",
-  "color": "#2e9e98",
+  "color": "#36c578",
   "category": "Медицинский центр",
   "logo": "assets/partners/016.png",
   "service": "Self Service",
@@ -258,7 +259,7 @@ const PARTNERS = [
  {
   "name": "Сибирячка и Снегирь",
   "short": "Си",
-  "color": "#9e772e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/017.png",
   "service": "Self Service",
@@ -273,7 +274,7 @@ const PARTNERS = [
  {
   "name": "Seven Six",
   "short": "SS",
-  "color": "#752e9e",
+  "color": "#f6f6f6",
   "category": "Теннисная одежда",
   "logo": "assets/partners/018.png",
   "service": "Full Service",
@@ -288,7 +289,7 @@ const PARTNERS = [
  {
   "name": "Особенный наполеон",
   "short": "Он",
-  "color": "#2e9e82",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/019.png",
   "service": "Self Service",
@@ -303,7 +304,7 @@ const PARTNERS = [
  {
   "name": "МРТ Экспресс",
   "short": "МЭ",
-  "color": "#9e372e",
+  "color": "#f6f6f6",
   "category": "Диагностический центр",
   "logo": "assets/partners/020.png",
   "service": "Full Service",
@@ -318,7 +319,7 @@ const PARTNERS = [
  {
   "name": "ВинЛаб",
   "short": "В",
-  "color": "#9e2e86",
+  "color": "#501a4a",
   "category": "Магазин напитков",
   "logo": "assets/partners/021.png",
   "service": "Full Service",
@@ -333,7 +334,7 @@ const PARTNERS = [
  {
   "name": "AMAZING RED",
   "short": "AR",
-  "color": "#9e2e41",
+  "color": "#f6f6f6",
   "category": "Спортивная одежда и обувь",
   "logo": "assets/partners/022.png",
   "service": "Full Service",
@@ -348,7 +349,7 @@ const PARTNERS = [
  {
   "name": "PALAZZO DUCALE",
   "short": "PD",
-  "color": "#9e2e5f",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/023.png",
   "service": "Self Service",
@@ -363,7 +364,7 @@ const PARTNERS = [
  {
   "name": "Улыбка радуги",
   "short": "Ур",
-  "color": "#9e302e",
+  "color": "#f5f5f5",
   "category": "Косметика и товары для дома",
   "logo": "assets/partners/024.png",
   "service": "Full Service",
@@ -378,7 +379,7 @@ const PARTNERS = [
  {
   "name": "Оптика",
   "short": "О",
-  "color": "#9e2e5f",
+  "color": "#69788d",
   "category": "Оптика",
   "logo": "assets/partners/self-service.svg",
   "service": "Self Service",
@@ -393,7 +394,7 @@ const PARTNERS = [
  {
   "name": "Якитория",
   "short": "Я",
-  "color": "#9e2e53",
+  "color": "#ed1b34",
   "category": "Японский ресторан",
   "logo": "assets/partners/026.png",
   "service": "Full Service",
@@ -408,7 +409,7 @@ const PARTNERS = [
  {
   "name": "DeLonghi",
   "short": "D",
-  "color": "#689e2e",
+  "color": "#1a2741",
   "category": "Техника для кухни",
   "logo": "assets/partners/027.png",
   "service": "Full Service",
@@ -423,7 +424,7 @@ const PARTNERS = [
  {
   "name": "Uniq",
   "short": "U",
-  "color": "#9e642e",
+  "color": "#ffcd33",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/028.png",
   "service": "Self Service",
@@ -438,7 +439,7 @@ const PARTNERS = [
  {
   "name": "Алиев Дентал",
   "short": "АД",
-  "color": "#2e6c9e",
+  "color": "#36c578",
   "category": "Стоматология",
   "logo": "assets/partners/029.png",
   "service": "Self Service",
@@ -453,7 +454,7 @@ const PARTNERS = [
  {
   "name": "Точка красоты",
   "short": "Тк",
-  "color": "#2e9e95",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/030.png",
   "service": "Self Service",
@@ -468,7 +469,7 @@ const PARTNERS = [
  {
   "name": "Магазин «Биджин»",
   "short": "М«",
-  "color": "#2e919e",
+  "color": "#ff7a91",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/031.png",
   "service": "Self Service",
@@ -483,7 +484,7 @@ const PARTNERS = [
  {
   "name": "Taper-1",
   "short": "T",
-  "color": "#9a9e2e",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/032.png",
   "service": "Self Service",
@@ -498,7 +499,7 @@ const PARTNERS = [
  {
   "name": "Garnet Clinik",
   "short": "GC",
-  "color": "#2e7b9e",
+  "color": "#36c578",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/033.png",
   "service": "Self Service",
@@ -513,7 +514,7 @@ const PARTNERS = [
  {
   "name": "Арсенал",
   "short": "А",
-  "color": "#2e9e84",
+  "color": "#f4f4f5",
   "category": "Инструменты",
   "logo": "assets/partners/034.png",
   "service": "Full Service",
@@ -528,7 +529,7 @@ const PARTNERS = [
  {
   "name": "Womenpoint",
   "short": "W",
-  "color": "#919e2e",
+  "color": "#66a3ff",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/035.png",
   "service": "Self Service",
@@ -543,7 +544,7 @@ const PARTNERS = [
  {
   "name": "Mono Beauty Moscow",
   "short": "MB",
-  "color": "#2e629e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/036.png",
   "service": "Self Service",
@@ -558,7 +559,7 @@ const PARTNERS = [
  {
   "name": "Bogdanova_pmu",
   "short": "B",
-  "color": "#9e2e35",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/037.png",
   "service": "Self Service",
@@ -573,7 +574,7 @@ const PARTNERS = [
  {
   "name": "Много лосося",
   "short": "Мл",
-  "color": "#9e2e39",
+  "color": "#ff5700",
   "category": "Суши и роллы с доставкой",
   "logo": "assets/partners/038.png",
   "service": "Full Service",
@@ -588,7 +589,7 @@ const PARTNERS = [
  {
   "name": "Горлаб",
   "short": "Г",
-  "color": "#572e9e",
+  "color": "#e51f00",
   "category": "Медицинская лаборатория",
   "logo": "assets/partners/039.png",
   "service": "Full Service",
@@ -603,7 +604,7 @@ const PARTNERS = [
  {
   "name": "Мио массаж",
   "short": "Мм",
-  "color": "#2e689e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/040.png",
   "service": "Self Service",
@@ -618,7 +619,7 @@ const PARTNERS = [
  {
   "name": "Шаурмастер",
   "short": "Ш",
-  "color": "#8a9e2e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/000.png",
   "service": "Self Service",
@@ -633,7 +634,7 @@ const PARTNERS = [
  {
   "name": "Botinelli",
   "short": "B",
-  "color": "#2e579e",
+  "color": "#ffcd33",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/042.png",
   "service": "Self Service",
@@ -648,7 +649,7 @@ const PARTNERS = [
  {
   "name": "Amber",
   "short": "A",
-  "color": "#329e2e",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/043.png",
   "service": "Self Service",
@@ -663,7 +664,7 @@ const PARTNERS = [
  {
   "name": "Кыргызстан",
   "short": "К",
-  "color": "#9e5f2e",
+  "color": "#ffb74c",
   "category": "Продукты",
   "logo": "assets/partners/044.png",
   "service": "Self Service",
@@ -678,7 +679,7 @@ const PARTNERS = [
  {
   "name": "РИВ ГОШ",
   "short": "РГ",
-  "color": "#9e882e",
+  "color": "#231f20",
   "category": "Парфюмерия и косметика",
   "logo": "assets/partners/045.png",
   "service": "Full Service",
@@ -693,7 +694,7 @@ const PARTNERS = [
  {
   "name": "СПА Сиам",
   "short": "СС",
-  "color": "#482e9e",
+  "color": "#f6f6f6",
   "category": "Тайский массаж и СПА",
   "logo": "assets/partners/046.png",
   "service": "Full Service",
@@ -708,7 +709,7 @@ const PARTNERS = [
  {
   "name": "Ясно",
   "short": "Я",
-  "color": "#592e9e",
+  "color": "#42b2fc",
   "category": "Онлайн-консультации психолога",
   "logo": "assets/partners/047.png",
   "service": "Full Service",
@@ -723,7 +724,7 @@ const PARTNERS = [
  {
   "name": "Clean Clinic",
   "short": "CC",
-  "color": "#2e559e",
+  "color": "#36c578",
   "category": "Медицинский центр",
   "logo": "assets/partners/048.png",
   "service": "Self Service",
@@ -738,7 +739,7 @@ const PARTNERS = [
  {
   "name": "Аптека 36,6",
   "short": "А3",
-  "color": "#9e2e6d",
+  "color": "#00498a",
   "category": "Аптека",
   "logo": "assets/partners/049.png",
   "service": "Full Service",
@@ -753,7 +754,7 @@ const PARTNERS = [
  {
   "name": "PROBIVNOY",
   "short": "P",
-  "color": "#9e2e77",
+  "color": "#f6f6f6",
   "category": "Кожаные сумки и аксессуары",
   "logo": "assets/partners/050.png",
   "service": "Full Service",
@@ -768,7 +769,7 @@ const PARTNERS = [
  {
   "name": "Даниэль",
   "short": "Д",
-  "color": "#2e9e48",
+  "color": "#f6f4f0",
   "category": "Детская одежда и обувь",
   "logo": "assets/partners/051.png",
   "service": "Full Service",
@@ -783,7 +784,7 @@ const PARTNERS = [
  {
   "name": "Тануки",
   "short": "Т",
-  "color": "#9e2e57",
+  "color": "#ff0000",
   "category": "Японский ресторан",
   "logo": "assets/partners/052.png",
   "service": "Full Service",
@@ -798,7 +799,7 @@ const PARTNERS = [
  {
   "name": "Психолог Иванова",
   "short": "ПИ",
-  "color": "#6c2e9e",
+  "color": "#36c578",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/053.png",
   "service": "Self Service",
@@ -813,7 +814,7 @@ const PARTNERS = [
  {
   "name": "Русская Икра Плюс",
   "short": "РИ",
-  "color": "#372e9e",
+  "color": "#ffb74c",
   "category": "Продукты",
   "logo": "assets/partners/054.png",
   "service": "Self Service",
@@ -828,7 +829,7 @@ const PARTNERS = [
  {
   "name": "Мода Италии",
   "short": "МИ",
-  "color": "#4e9e2e",
+  "color": "#ffcd33",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/055.png",
   "service": "Self Service",
@@ -843,7 +844,7 @@ const PARTNERS = [
  {
   "name": "Kitfort",
   "short": "K",
-  "color": "#9e642e",
+  "color": "#f0f0f0",
   "category": "Бытовая техника",
   "logo": "assets/partners/056.png",
   "service": "Full Service",
@@ -858,7 +859,7 @@ const PARTNERS = [
  {
   "name": "Ажиотаж",
   "short": "А",
-  "color": "#342e9e",
+  "color": "#ffcd33",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/057.png",
   "service": "Self Service",
@@ -873,7 +874,7 @@ const PARTNERS = [
  {
   "name": "Цветалета",
   "short": "Ц",
-  "color": "#862e9e",
+  "color": "#ff7a91",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/058.png",
   "service": "Self Service",
@@ -888,7 +889,7 @@ const PARTNERS = [
  {
   "name": "Pigment Club",
   "short": "PC",
-  "color": "#9e642e",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/059.png",
   "service": "Self Service",
@@ -903,7 +904,7 @@ const PARTNERS = [
  {
   "name": "Кристалл проф",
   "short": "Кп",
-  "color": "#9e2e6f",
+  "color": "#ff7a91",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/060.png",
   "service": "Self Service",
@@ -918,7 +919,7 @@ const PARTNERS = [
  {
   "name": "Салон красоты Roby",
   "short": "Ск",
-  "color": "#9e2e9c",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/061.png",
   "service": "Self Service",
@@ -933,7 +934,7 @@ const PARTNERS = [
  {
   "name": "Твой Кейтеринг",
   "short": "ТК",
-  "color": "#9e2e6c",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/062.png",
   "service": "Self Service",
@@ -948,7 +949,7 @@ const PARTNERS = [
  {
   "name": "Полако",
   "short": "П",
-  "color": "#2e9e80",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/063.png",
   "service": "Self Service",
@@ -963,7 +964,7 @@ const PARTNERS = [
  {
   "name": "Zolla",
   "short": "Z",
-  "color": "#9e462e",
+  "color": "#f1f1f1",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/064.png",
   "service": "Full Service",
@@ -978,7 +979,7 @@ const PARTNERS = [
  {
   "name": "Трит",
   "short": "Т",
-  "color": "#719e2e",
+  "color": "#36c578",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/065.png",
   "service": "Self Service",
@@ -993,7 +994,7 @@ const PARTNERS = [
  {
   "name": "Бондимания",
   "short": "Б",
-  "color": "#2e449e",
+  "color": "#ffb74c",
   "category": "Кофейня",
   "logo": "assets/partners/066.png",
   "service": "Self Service",
@@ -1008,7 +1009,7 @@ const PARTNERS = [
  {
   "name": "MoreKoT",
   "short": "M",
-  "color": "#9e682e",
+  "color": "#ffb74c",
   "category": "Кофейня",
   "logo": "assets/partners/067.png",
   "service": "Self Service",
@@ -1023,7 +1024,7 @@ const PARTNERS = [
  {
   "name": "Амрита",
   "short": "А",
-  "color": "#9e462e",
+  "color": "#36c578",
   "category": "Медицинский центр",
   "logo": "assets/partners/068.png",
   "service": "Self Service",
@@ -1038,7 +1039,7 @@ const PARTNERS = [
  {
   "name": "Зубной Дом",
   "short": "ЗД",
-  "color": "#9e2e66",
+  "color": "#36c578",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/069.png",
   "service": "Self Service",
@@ -1053,7 +1054,7 @@ const PARTNERS = [
  {
   "name": "Westmed",
   "short": "W",
-  "color": "#9e842e",
+  "color": "#36c578",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/070.png",
   "service": "Self Service",
@@ -1068,7 +1069,7 @@ const PARTNERS = [
  {
   "name": "Спортмастер",
   "short": "С",
-  "color": "#392e9e",
+  "color": "#1551e5",
   "category": "Спортивные товары",
   "logo": "assets/partners/071.png",
   "service": "Full Service",
@@ -1083,7 +1084,7 @@ const PARTNERS = [
  {
   "name": "Да Винчи",
   "short": "ДВ",
-  "color": "#2e9e2e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/072.png",
   "service": "Self Service",
@@ -1098,7 +1099,7 @@ const PARTNERS = [
  {
   "name": "SKILL BIKE",
   "short": "SB",
-  "color": "#2e469e",
+  "color": "#f6f6f6",
   "category": "Велосипеды",
   "logo": "assets/partners/073.png",
   "service": "Full Service",
@@ -1113,7 +1114,7 @@ const PARTNERS = [
  {
   "name": "Барбершоп",
   "short": "Б",
-  "color": "#912e9e",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/074.png",
   "service": "Self Service",
@@ -1128,7 +1129,7 @@ const PARTNERS = [
  {
   "name": "Ed Beauty",
   "short": "EB",
-  "color": "#9e2e30",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/075.png",
   "service": "Self Service",
@@ -1143,7 +1144,7 @@ const PARTNERS = [
  {
   "name": "Yamaguchi",
   "short": "Y",
-  "color": "#869e2e",
+  "color": "#e21b1b",
   "category": "Массажное оборудование",
   "logo": "assets/partners/076.png",
   "service": "Full Service",
@@ -1158,7 +1159,7 @@ const PARTNERS = [
  {
   "name": "Магазин Sorochka.pro",
   "short": "МS",
-  "color": "#559e2e",
+  "color": "#ffcd33",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/077.png",
   "service": "Self Service",
@@ -1173,7 +1174,7 @@ const PARTNERS = [
  {
   "name": "NO ONE",
   "short": "NO",
-  "color": "#3f2e9e",
+  "color": "#000000",
   "category": "Обувь и аксессуары",
   "logo": "assets/partners/078.png",
   "service": "Full Service",
@@ -1188,7 +1189,7 @@ const PARTNERS = [
  {
   "name": "SJ",
   "short": "S",
-  "color": "#372e9e",
+  "color": "#ffcd33",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/079.png",
   "service": "Self Service",
@@ -1203,7 +1204,7 @@ const PARTNERS = [
  {
   "name": "Салон нижнего белья Vasilissa",
   "short": "Сн",
-  "color": "#2e9e8a",
+  "color": "#66a3ff",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/080.png",
   "service": "Self Service",
@@ -1218,7 +1219,7 @@ const PARTNERS = [
  {
   "name": "Гастроном",
   "short": "Г",
-  "color": "#3b2e9e",
+  "color": "#ffcd33",
   "category": "Продукты",
   "logo": "assets/partners/081.png",
   "service": "Self Service",
@@ -1233,7 +1234,7 @@ const PARTNERS = [
  {
   "name": "Moulinex",
   "short": "M",
-  "color": "#9e2e9e",
+  "color": "#ec1b2f",
   "category": "Техника для кухни",
   "logo": "assets/partners/082.png",
   "service": "Full Service",
@@ -1248,7 +1249,7 @@ const PARTNERS = [
  {
   "name": "Cave",
   "short": "C",
-  "color": "#9e2e88",
+  "color": "#f6f6f6",
   "category": "Повседневная одежда",
   "logo": "assets/partners/083.png",
   "service": "Full Service",
@@ -1263,7 +1264,7 @@ const PARTNERS = [
  {
   "name": "Сити Стайл",
   "short": "СС",
-  "color": "#9e532e",
+  "color": "#ff7a91",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/084.png",
   "service": "Self Service",
@@ -1278,7 +1279,7 @@ const PARTNERS = [
  {
   "name": "Аптека Ригла",
   "short": "АР",
-  "color": "#2e9e4e",
+  "color": "#008837",
   "category": "Аптека",
   "logo": "assets/partners/085.png",
   "service": "Full Service",
@@ -1293,7 +1294,7 @@ const PARTNERS = [
  {
   "name": "Лаки Ю",
   "short": "ЛЮ",
-  "color": "#9e2e39",
+  "color": "#e58bb5",
   "category": "Студия красоты",
   "logo": "assets/partners/086.png",
   "service": "Full Service",
@@ -1308,7 +1309,7 @@ const PARTNERS = [
  {
   "name": "Шёлк",
   "short": "Ш",
-  "color": "#9e802e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/087.png",
   "service": "Self Service",
@@ -1323,7 +1324,7 @@ const PARTNERS = [
  {
   "name": "SKIN EXPERT",
   "short": "SE",
-  "color": "#9e802e",
+  "color": "#e5e9cf",
   "category": "Косметологическая клиника",
   "logo": "assets/partners/088.png",
   "service": "Full Service",
@@ -1338,7 +1339,7 @@ const PARTNERS = [
  {
   "name": "SK",
   "short": "S",
-  "color": "#2e9e7c",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/089.png",
   "service": "Self Service",
@@ -1353,7 +1354,7 @@ const PARTNERS = [
  {
   "name": "Магазин женской одежды",
   "short": "Мж",
-  "color": "#2e9e2e",
+  "color": "#66a3ff",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/090.png",
   "service": "Self Service",
@@ -1368,7 +1369,7 @@ const PARTNERS = [
  {
   "name": "Луч",
   "short": "Л",
-  "color": "#9e2e62",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/091.png",
   "service": "Self Service",
@@ -1383,7 +1384,7 @@ const PARTNERS = [
  {
   "name": "INVITRO",
   "short": "I",
-  "color": "#9e392e",
+  "color": "#0098b2",
   "category": "Медицинская лаборатория",
   "logo": "assets/partners/092.png",
   "service": "Full Service",
@@ -1398,7 +1399,7 @@ const PARTNERS = [
  {
   "name": "Eazyway",
   "short": "E",
-  "color": "#9c2e9e",
+  "color": "#1d1d1b",
   "category": "Спортивная одежда",
   "logo": "assets/partners/093.png",
   "service": "Full Service",
@@ -1413,7 +1414,7 @@ const PARTNERS = [
  {
   "name": "Гемотест",
   "short": "Г",
-  "color": "#9e4a2e",
+  "color": "#059349",
   "category": "Медицинская лаборатория",
   "logo": "assets/partners/094.png",
   "service": "Full Service",
@@ -1428,7 +1429,7 @@ const PARTNERS = [
  {
   "name": "Хочу Шаурму",
   "short": "ХШ",
-  "color": "#9a2e9e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/000.png",
   "service": "Self Service",
@@ -1443,7 +1444,7 @@ const PARTNERS = [
  {
   "name": "Барбершоп Zyo",
   "short": "БZ",
-  "color": "#779e2e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/096.png",
   "service": "Self Service",
@@ -1458,7 +1459,7 @@ const PARTNERS = [
  {
   "name": "Эльдорадо",
   "short": "Э",
-  "color": "#792e9e",
+  "color": "#c10230",
   "category": "Электроника и бытовая техника",
   "logo": "assets/partners/097.png",
   "service": "Full Service",
@@ -1473,7 +1474,7 @@ const PARTNERS = [
  {
   "name": "Магазин Белла",
   "short": "МБ",
-  "color": "#2e3d9e",
+  "color": "#69788d",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/self-service.svg",
   "service": "Self Service",
@@ -1488,7 +1489,7 @@ const PARTNERS = [
  {
   "name": "Шаурмен",
   "short": "Ш",
-  "color": "#2e689e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/000.png",
   "service": "Self Service",
@@ -1503,7 +1504,7 @@ const PARTNERS = [
  {
   "name": "Престиж",
   "short": "П",
-  "color": "#5f2e9e",
+  "color": "#ffcd33",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/100.png",
   "service": "Self Service",
@@ -1518,7 +1519,7 @@ const PARTNERS = [
  {
   "name": "М.Косметик",
   "short": "М",
-  "color": "#329e2e",
+  "color": "#f446b8",
   "category": "Косметика и товары для дома",
   "logo": "assets/partners/101.png",
   "service": "Full Service",
@@ -1533,7 +1534,7 @@ const PARTNERS = [
  {
   "name": "Магия масел",
   "short": "Мм",
-  "color": "#9e2e35",
+  "color": "#ffcd33",
   "category": "Продукты",
   "logo": "assets/partners/102.png",
   "service": "Self Service",
@@ -1548,7 +1549,7 @@ const PARTNERS = [
  {
   "name": "Кофе с собой",
   "short": "Кс",
-  "color": "#9e5f2e",
+  "color": "#ffb74c",
   "category": "Кофейня",
   "logo": "assets/partners/103.png",
   "service": "Self Service",
@@ -1563,7 +1564,7 @@ const PARTNERS = [
  {
   "name": "ШАУROOM",
   "short": "Ш",
-  "color": "#2e959e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/000.png",
   "service": "Self Service",
@@ -1578,7 +1579,7 @@ const PARTNERS = [
  {
   "name": "Фитомаркет",
   "short": "Ф",
-  "color": "#2e799e",
+  "color": "#29004e",
   "category": "Товары для здоровья",
   "logo": "assets/partners/105.png",
   "service": "Full Service",
@@ -1593,7 +1594,7 @@ const PARTNERS = [
  {
   "name": "Shaurma City",
   "short": "SC",
-  "color": "#9e2e34",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/000.png",
   "service": "Self Service",
@@ -1608,7 +1609,7 @@ const PARTNERS = [
  {
   "name": "ZiZi Dent",
   "short": "ZD",
-  "color": "#9e2e55",
+  "color": "#36c578",
   "category": "Стоматология",
   "logo": "assets/partners/107.png",
   "service": "Self Service",
@@ -1623,7 +1624,7 @@ const PARTNERS = [
  {
   "name": "Лаву",
   "short": "Л",
-  "color": "#2e3f9e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/108.png",
   "service": "Self Service",
@@ -1638,7 +1639,7 @@ const PARTNERS = [
  {
   "name": "Taper",
   "short": "T",
-  "color": "#649e2e",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/109.png",
   "service": "Self Service",
@@ -1653,7 +1654,7 @@ const PARTNERS = [
  {
   "name": "NEYROX",
   "short": "N",
-  "color": "#5d2e9e",
+  "color": "#0073f0",
   "category": "Носимые устройства",
   "logo": "assets/partners/110.png",
   "service": "Full Service",
@@ -1668,7 +1669,7 @@ const PARTNERS = [
  {
   "name": "London Lashes",
   "short": "LL",
-  "color": "#882e9e",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/111.png",
   "service": "Self Service",
@@ -1683,7 +1684,7 @@ const PARTNERS = [
  {
   "name": "ТиО",
   "short": "Т",
-  "color": "#662e9e",
+  "color": "#36c578",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/112.png",
   "service": "Self Service",
@@ -1698,7 +1699,7 @@ const PARTNERS = [
  {
   "name": "All in Beauty",
   "short": "Ai",
-  "color": "#9e952e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/113.png",
   "service": "Self Service",
@@ -1713,7 +1714,7 @@ const PARTNERS = [
  {
   "name": "Добрый Доктор",
   "short": "ДД",
-  "color": "#9e2e42",
+  "color": "#36c578",
   "category": "Медицинский центр",
   "logo": "assets/partners/114.png",
   "service": "Self Service",
@@ -1728,7 +1729,7 @@ const PARTNERS = [
  {
   "name": "Стоматология",
   "short": "С",
-  "color": "#932e9e",
+  "color": "#36c578",
   "category": "Стоматология",
   "logo": "assets/partners/115.png",
   "service": "Self Service",
@@ -1743,7 +1744,7 @@ const PARTNERS = [
  {
   "name": "МТС",
   "short": "М",
-  "color": "#9e2e59",
+  "color": "#ff0032",
   "category": "Связь и электроника",
   "logo": "assets/partners/116.png",
   "service": "Full Service",
@@ -1758,7 +1759,7 @@ const PARTNERS = [
  {
   "name": "ViKing",
   "short": "V",
-  "color": "#912e9e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/117.png",
   "service": "Self Service",
@@ -1773,7 +1774,7 @@ const PARTNERS = [
  {
   "name": "Чайная «Тифрейм»",
   "short": "Ч«",
-  "color": "#2e979e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/118.png",
   "service": "Self Service",
@@ -1788,7 +1789,7 @@ const PARTNERS = [
  {
   "name": "Твоя pizza",
   "short": "Тp",
-  "color": "#9e2e59",
+  "color": "#e5f33a",
   "category": "Пицца с доставкой",
   "logo": "assets/partners/119.png",
   "service": "Full Service",
@@ -1803,7 +1804,7 @@ const PARTNERS = [
  {
   "name": "Центр эпиляции",
   "short": "Цэ",
-  "color": "#9e2e6f",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/120.png",
   "service": "Self Service",
@@ -1818,7 +1819,7 @@ const PARTNERS = [
  {
   "name": "Orso Bianco",
   "short": "OB",
-  "color": "#2e6a9e",
+  "color": "#f6f6f6",
   "category": "Детская верхняя одежда",
   "logo": "assets/partners/121.png",
   "service": "Full Service",
@@ -1833,7 +1834,7 @@ const PARTNERS = [
  {
   "name": "Tom Tailor",
   "short": "TT",
-  "color": "#309e2e",
+  "color": "#001830",
   "category": "Повседневная одежда",
   "logo": "assets/partners/122.png",
   "service": "Full Service",
@@ -1848,7 +1849,7 @@ const PARTNERS = [
  {
   "name": "Cream",
   "short": "C",
-  "color": "#449e2e",
+  "color": "#ffcd33",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/123.png",
   "service": "Self Service",
@@ -1863,7 +1864,7 @@ const PARTNERS = [
  {
   "name": "Азиатские продукты",
   "short": "Ап",
-  "color": "#2e9e46",
+  "color": "#ffcd33",
   "category": "Продукты",
   "logo": "assets/partners/124.png",
   "service": "Self Service",
@@ -1878,7 +1879,7 @@ const PARTNERS = [
  {
   "name": "Манч",
   "short": "М",
-  "color": "#2e449e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/125.png",
   "service": "Self Service",
@@ -1893,7 +1894,7 @@ const PARTNERS = [
  {
   "name": "Лор центр",
   "short": "Лц",
-  "color": "#939e2e",
+  "color": "#36c578",
   "category": "Медицинский центр",
   "logo": "assets/partners/126.png",
   "service": "Self Service",
@@ -1908,7 +1909,7 @@ const PARTNERS = [
  {
   "name": "Твой образ",
   "short": "То",
-  "color": "#2e759e",
+  "color": "#66a3ff",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/127.png",
   "service": "Self Service",
@@ -1923,7 +1924,7 @@ const PARTNERS = [
  {
   "name": "Трапезная",
   "short": "Т",
-  "color": "#2e429e",
+  "color": "#ffb74c",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/128.png",
   "service": "Self Service",
@@ -1938,7 +1939,7 @@ const PARTNERS = [
  {
   "name": "Extendess",
   "short": "E",
-  "color": "#602e9e",
+  "color": "#060b0b",
   "category": "Салон красоты",
   "logo": "assets/partners/129.png",
   "service": "Full Service",
@@ -1953,7 +1954,7 @@ const PARTNERS = [
  {
   "name": "PIZHON",
   "short": "P",
-  "color": "#919e2e",
+  "color": "#f6f6f6",
   "category": "Мужская одежда и обувь",
   "logo": "assets/partners/130.png",
   "service": "Full Service",
@@ -1968,7 +1969,7 @@ const PARTNERS = [
  {
   "name": "Пироги №1",
   "short": "П№",
-  "color": "#9e5b2e",
+  "color": "#f5f5f5",
   "category": "Пекарня с доставкой",
   "logo": "assets/partners/131.png",
   "service": "Full Service",
@@ -1983,7 +1984,7 @@ const PARTNERS = [
  {
   "name": "Aravia",
   "short": "A",
-  "color": "#739e2e",
+  "color": "#573392",
   "category": "Косметика для ухода",
   "logo": "assets/partners/132.png",
   "service": "Full Service",
@@ -1998,7 +1999,7 @@ const PARTNERS = [
  {
   "name": "Modny Look",
   "short": "ML",
-  "color": "#9e372e",
+  "color": "#66a3ff",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/133.png",
   "service": "Self Service",
@@ -2013,7 +2014,7 @@ const PARTNERS = [
  {
   "name": "Котокафе",
   "short": "К",
-  "color": "#8d2e9e",
+  "color": "#ffb74c",
   "category": "Кофейня",
   "logo": "assets/partners/134.png",
   "service": "Self Service",
@@ -2028,7 +2029,7 @@ const PARTNERS = [
  {
   "name": "Косметология",
   "short": "К",
-  "color": "#642e9e",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/135.png",
   "service": "Self Service",
@@ -2043,7 +2044,7 @@ const PARTNERS = [
  {
   "name": "Штолле",
   "short": "Ш",
-  "color": "#322e9e",
+  "color": "#983d22",
   "category": "Пироговые с доставкой",
   "logo": "assets/partners/136.png",
   "service": "Full Service",
@@ -2058,7 +2059,7 @@ const PARTNERS = [
  {
   "name": "Студия перманента",
   "short": "Сп",
-  "color": "#2e9e6c",
+  "color": "#ff7a91",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/137.png",
   "service": "Self Service",
@@ -2073,7 +2074,7 @@ const PARTNERS = [
  {
   "name": "Redmond",
   "short": "R",
-  "color": "#9e422e",
+  "color": "#e40521",
   "category": "Бытовая техника",
   "logo": "assets/partners/138.png",
   "service": "Full Service",
@@ -2088,7 +2089,7 @@ const PARTNERS = [
  {
   "name": "Массажист Виктория",
   "short": "МВ",
-  "color": "#719e2e",
+  "color": "#ff7a91",
   "category": "Красота и уход",
   "logo": "assets/partners/139.png",
   "service": "Self Service",
@@ -2103,7 +2104,7 @@ const PARTNERS = [
  {
   "name": "Braun",
   "short": "B",
-  "color": "#9e2e55",
+  "color": "#f7f7f7",
   "category": "Бытовая техника",
   "logo": "assets/partners/140.png",
   "service": "Full Service",
@@ -2118,7 +2119,7 @@ const PARTNERS = [
  {
   "name": "Стоун-Дент",
   "short": "С",
-  "color": "#6a2e9e",
+  "color": "#36c578",
   "category": "Стоматология",
   "logo": "assets/partners/141.png",
   "service": "Self Service",
@@ -2133,7 +2134,7 @@ const PARTNERS = [
  {
   "name": "Евродицентр",
   "short": "Е",
-  "color": "#9e7b2e",
+  "color": "#36c578",
   "category": "Кафе и рестораны",
   "logo": "assets/partners/142.png",
   "service": "Self Service",
@@ -2148,7 +2149,7 @@ const PARTNERS = [
  {
   "name": "Ателье",
   "short": "А",
-  "color": "#9e2e8a",
+  "color": "#66a3ff",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/143.png",
   "service": "Self Service",
@@ -2163,7 +2164,7 @@ const PARTNERS = [
  {
   "name": "Семейная парикмахерская",
   "short": "Сп",
-  "color": "#4a2e9e",
+  "color": "#ffcd33",
   "category": "Красота и уход",
   "logo": "assets/partners/144.png",
   "service": "Self Service",
@@ -2178,7 +2179,7 @@ const PARTNERS = [
  {
   "name": "Homie Coffie",
   "short": "HC",
-  "color": "#8a9e2e",
+  "color": "#ffb74c",
   "category": "Кофейня",
   "logo": "assets/partners/145.png",
   "service": "Self Service",
@@ -2193,7 +2194,7 @@ const PARTNERS = [
  {
   "name": "Bon Appartament",
   "short": "BA",
-  "color": "#442e9e",
+  "color": "#66a3ff",
   "category": "Одежда и аксессуары",
   "logo": "assets/partners/146.png",
   "service": "Self Service",

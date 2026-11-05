@@ -1,7 +1,10 @@
 PASS: 147 distinct archive partners
 PASS: 2000 distinct addresses and buildings
+PASS: Every address and coordinate match the verified source building
 PASS: Every coordinate inside its addressed building footprint
-PASS: Central/outer 1334/666
+PASS: Every point lies on a building roof, outside courtyard holes
+PASS: Continuous centre-biased distribution without district labels
+PASS: Logo background colours retained in partner data
 PASS: Cashback domain
 PASS: Maximum bonuses domain
 PASS: November dates and conditions
@@ -11,4 +14,4 @@ PASS: Every logo exists
 PASS: Full Service sources
 PASS: Full Service weights exceed Self Service
 PASS: All JavaScript parses
-13 checks passed
+16 checks passed
