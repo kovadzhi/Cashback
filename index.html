@@ -644,6 +644,7 @@ function renderExpandedPins(layer,sourcePoints=points){
 
 function repositionMapElements(){
  if(!mapReady)return;
+ if(newPinModeEnabled()&&newPinMotion.scene){updateNewPinFrame();return;}
  const layer=document.getElementById('markers');
  const pointById=new Map(getRenderPoints().map(p=>[String(p.pinId),p]));
  layer.querySelectorAll('.marker[data-pin-id],.cluster[data-pin-id]').forEach(el=>{
@@ -774,8 +775,9 @@ document.getElementById('newLogicToggle').onchange=()=>{
 makePoints(2000);makeGoodsPoints();
 
 </script>
-<script src="new-pins.js?v=20261105-motion-stable2"></script>
-<script src="new-pin-motion.js?v=20261105-motion-stable"></script>
-<script src="sheets.js?v=20261105-motion-stable"></script>
+<script src="new-pins.js?v=20261105-performance8"></script>
+<script src="new-pin-motion.js?v=20261105-performance"></script>
+<script src="new-pin-scene.js?v=20261105-performance7"></script>
+<script src="sheets.js?v=20261105-performance"></script>
 <script>initSheets();initMap();connectSheetsToMap();</script>
 </body></html>

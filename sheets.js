@@ -154,8 +154,9 @@ function visiblePartnerOffers(){
  if(!mapReady||!map)return [];
  const {clientWidth:width,clientHeight:height}=getActiveMapSize();
  if(height<=0)return [];
- const byPartner=new Map();
+ const byPartner=new Map(),activeBounds=newPinModeEnabled()?getActiveMapBounds():null;
  for(const p of getRenderPoints()){
+  if(activeBounds&&!activeBounds.contains([p.lng,p.lat]))continue;
   const pt=projectActive([p.lng,p.lat]);
   if(pt.x<0||pt.x>width||pt.y<0||pt.y>height)continue;
   const key=p.name.trim().toLocaleLowerCase('ru-RU');
@@ -166,9 +167,11 @@ function visiblePartnerOffers(){
  return [...byPartner.values()].sort((a,b)=>b.p.partnerWeight-a.p.partnerWeight||a.distance-b.distance||a.p.pinId-b.p.pinId).map(item=>item.p);
 }
 function refreshOfferList(){
+ if(newPinModeEnabled()&&newPinMotion.active)return;
  if(!sheetElements.list||sheetState.selected||sheetState.drag||sheetState.listExpanded||sheetState.listIntermediate||performance.now()<sheetState.motionUntil)return;
  const offers=visiblePartnerOffers();
  const key=offers.map(p=>p.pinId+':'+p.cash).join(',');
+ if(newPinModeEnabled())sheetElements.list.dataset.mapRevision=String(newPinMotion.revision);
  if(key===sheetState.listKey&&sheetElements.list.dataset.ready)return;
  sheetState.listKey=key;
  sheetElements.list.dataset.ready='true';
@@ -196,6 +199,7 @@ function refreshOfferList(){
 
 }
 function scheduleOfferRefresh(){
+ if(newPinModeEnabled())return;
  if(sheetState.frame)return;
  sheetState.frame=requestAnimationFrame(()=>{sheetState.frame=0;refreshOfferList();});
 }
@@ -398,8 +402,8 @@ function initSheets(){
  layoutSheets();
 }
 function connectSheetsToMap(){
- map.on('move',()=>{scheduleOfferRefresh();});
- map.on('moveend',()=>{renderSelectedMarker();refreshOfferList();});
+ map.on('move',()=>{if(!newPinModeEnabled())scheduleOfferRefresh();});
+ map.on('moveend',()=>{renderSelectedMarker();if(!newPinModeEnabled())refreshOfferList();});
  map.on('resize',scheduleOfferRefresh);
  updateActiveViewport();
  render();

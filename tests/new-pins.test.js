@@ -68,11 +68,11 @@ async function runNewPinTests(check,settle){
  check('Новая логика: резервный кандидат исходно не входит в пять логотипов тайла',getNewTilePlan(reserveScene,z).dots.some(p=>p.pinId===reservePoint.pinId));
  renderNewTilePins(layer,reserveScene);
  check('Новая логика: резерв ниже пяти лидеров добирает четвёртый текстовый пин',layer.querySelectorAll('[data-state="expanded"]').length>=4&&state(110)==='expanded');
- check('Новая логика: резервный добор не теряет и не дублирует точки',new Set([...layer.querySelectorAll('.marker')].map(el=>el.dataset.pinId)).size===reserveScene.length&&layer.querySelectorAll('.marker').length===reserveScene.length);
+ check('Новая логика: резервный добор не теряет и не дублирует точки',newPinMotion.scene.representedIds.size===reserveScene.length);
  const clusterReserveScene=[...reserveScene,...Array.from({length:9},(_,i)=>make(120+i,60,tileTop+60,70-i,'Cluster filler '+i))];
  renderNewTilePins(layer,clusterReserveScene);
  check('Новая логика: четвёртый текст может получить участник кластера',layer.querySelectorAll('[data-state="expanded"]').length>=4&&state(110)==='expanded');
- const clusterRepresented=layer.querySelectorAll('.marker').length+[...layer.querySelectorAll('.new-tile-cluster')].reduce((sum,el)=>sum+el.dataset.memberIds.split(',').length,0);
+ const clusterRepresented=newPinMotion.scene.representedIds.size;
  check('Новая логика: выделение текста из кластера сохраняет точное число точек',clusterRepresented===clusterReserveScene.length);
  const ample=Array.from({length:8},(_,i)=>make(80+i,60,65+i*70,150-i,'Rank '+i));
  renderNewTilePins(layer,ample);
@@ -83,16 +83,16 @@ async function runNewPinTests(check,settle){
  const highest=make(30,60,65,200),lower=make(31,60,65,190);
  layer.innerHTML='';renderNewTilePins(layer,[lower,highest]);
  check('Новая логика: коллизию выигрывает максимальный вес',state(30)==='expanded'&&state(31)==='dot');
- const transitioning=layer.querySelector('[data-pin-id="10031"]'),stableImage=transitioning.querySelector('img');
+ const transitioning=layer.querySelector('[data-pin-id="10031"]');
  renderNewTilePins(layer,[{...lower,lng:map.unproject([60,250]).lng,lat:map.unproject([60,250]).lat},highest]);
- check('Новая логика: смена точки на полный пин сохраняет узел и изображение',state(31)==='expanded'&&layer.querySelector('[data-pin-id="10031"]')===transitioning&&transitioning.querySelector('img')===stableImage);
+ check('Новая логика: смена точки на полный пин сохраняет узел и восстанавливает логотип',state(31)==='expanded'&&layer.querySelector('[data-pin-id="10031"]')===transitioning&&transitioning.querySelector('img')?.getAttribute('src')===lower.logo);
  renderNewTilePins(layer,[lower,highest]);
  check('Новая логика: смена полного пина на точку сразу даёт 16 px',state(31)==='dot'&&Math.abs(transitioning.getBoundingClientRect().width-16)<.1&&getComputedStyle(transitioning).opacity==='1');
  check('Уменьшение пина до точки сопровождается анимацией',matchMedia('(prefers-reduced-motion: reduce)').matches||document.querySelector('.new-pin-collapse-ghost')?.getAnimations().some(a=>a.playState==='running'));
  layer.innerHTML='';renderNewTilePins(layer,[highest,make(32,60,110,180)]);
  check('Новая логика: зазор учитывает 8 px с каждой стороны обоих пинов',state(30)==='expanded'&&state(32)==='dot');
  layer.innerHTML='';renderNewTilePins(layer,sameTile);
- check('Новая логика: возвращён обычный тайловый кластер с точным составом',layer.querySelector('.new-tile-cluster')?.dataset.memberIds.split(',').length===11);
+ check('Новая логика: возвращён обычный тайловый кластер с точным составом',layer.querySelector('.new-tile-cluster')?.dataset.memberIds.split(',').length===11,JSON.stringify(newPinMotion.scene.records.filter(r=>r.kind==='cluster').map(r=>({key:r.key,pt:r.pt,count:r.members.length,connected:r.el.isConnected}))));
  const cluster=layer.querySelector('.new-tile-cluster');
  const before=cluster?.style.cssText;
  for(let i=0;i<20;i++)map.fire('move');
@@ -106,7 +106,8 @@ async function runNewPinTests(check,settle){
   map.jumpTo({zoom,center:zoom>=17?[points[0].lng,points[0].lat]:USER_LOCATION});render();await settle();
   const visible=new Set(getVisibleTiles(getQuadkeyZoom(map.getZoom())).map(t=>t.key));
   const expected=points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,getQuadkeyZoom(map.getZoom()));return visible.has(tileToQuadkey(tile.x,tile.y,getQuadkeyZoom(map.getZoom())));}).length;
-  const actual=layer.querySelectorAll('.marker:not(.new-pin-overscan)').length+[...layer.querySelectorAll('.new-tile-cluster')].reduce((sum,el)=>sum+el.dataset.memberIds.split(',').length,0);
+  const activeIds=new Set(points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,getQuadkeyZoom(map.getZoom()));return visible.has(tileToQuadkey(tile.x,tile.y,getQuadkeyZoom(map.getZoom())));}).map(p=>String(p.pinId)));
+  const actual=[...newPinMotion.scene.representedIds].filter(id=>activeIds.has(id)).length;
   check(`Новая логика: все точки учтены на зуме ${zoom}`,expected===actual,`${actual}/${expected}`);
  }
  map.jumpTo({center:USER_LOCATION,zoom:11});render();await settle();

@@ -1,7 +1,7 @@
 (async()=>{
  const check=(name,condition,detail='')=>parent.reportTest(name,!!condition,detail);
  const tick=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
- const settle=async()=>{await tick();await new Promise(resolve=>setTimeout(resolve,650));};
+ const settle=async()=>{await tick();await new Promise(resolve=>setTimeout(resolve,650));for(let i=0;newPinModeEnabled()&&newPinMotion.active&&i<60;i++)await new Promise(resolve=>setTimeout(resolve,16));};
  const near=(a,b)=>Math.abs(a-b)<1;
  const box=id=>document.getElementById(id).getBoundingClientRect();
  const cameraSnapshot=()=>({center:map.getCenter().toArray(),zoom:map.getZoom(),point:map.project(USER_LOCATION)});
@@ -179,7 +179,7 @@
   check('Общая шторка возвращается на место',near(box('offersSheet').top,614));
   check('Закрытие карточки восстанавливает карту',sheetElements.detail.hidden&&!sheetElements.offers.inert&&near(box('markers').height,614));
   const oldCamera={center:map.getCenter().toArray(),zoom:map.getZoom()};
-  map.jumpTo({center:[0,0],zoom:16});render();await tick();refreshOfferList();
+  map.jumpTo({center:[0,0],zoom:16});render();await settle();refreshOfferList();
   check('Пустая область показывает zero state',!sheetElements.empty.hidden&&sheetElements.list.hidden&&document.querySelectorAll('.offer-row').length===0);
   setSheetExpanded('list',true);await settle();
   check('Короткая пустая шторка поднимается только на высоту контента',box('offersSheet').top>44&&near(box('offersSheet').top,expandedSheetTop('list')));

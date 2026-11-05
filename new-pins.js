@@ -5,8 +5,7 @@ const newDotColorsReady=Promise.resolve();
 function compareNewPinWeight(a,b){
  return (Number(b.partnerWeight)||0)-(Number(a.partnerWeight)||0)||Number(a.pinId)-Number(b.pinId);
 }
-function getNewTilePlan(source,tileZoom){
- const visibleTiles=getVisibleTiles(tileZoom);
+function getNewTilePlan(source,tileZoom,visibleTiles=getVisibleTiles(tileZoom)){
  const buckets=new Map(visibleTiles.map(tile=>[tile.key,{...tile,items:[]}]));
  for(const p of source){
   if(p.selected)continue;
@@ -46,21 +45,24 @@ function newTileNodeKey(el){
 }
 function commitNewTilePins(layer,staging){
  const previous=new Map([...layer.children].map(el=>[newTileNodeKey(el),el]).filter(([key])=>key));
+ for(const record of newPinMotion.scene?.records||[])if(record.el&&!previous.has(record.key))previous.set(record.key,record.el);
  const retained=new Set();
  for(const next of [...staging.children]){
   const current=previous.get(newTileNodeKey(next));
   if(!current){layer.append(next);retained.add(next);continue;}
   // Keep the marker and decoded logo in place. Apply only its final state;
   // no visible expanded measurement or opacity/width animation is exposed.
-  const shrinking=!newPinMotion.active&&!map.isMoving()&&current.dataset.state!=='dot'&&next.dataset.state==='dot';
+  const shrinking=current.isConnected&&!newPinMotion.active&&!map.isMoving()&&current.dataset.state!=='dot'&&next.dataset.state==='dot';
   const ghostSource=shrinking?current.cloneNode(true):null;
-  const previousWidth=current.getBoundingClientRect().width;
-  const previousHeight=current.getBoundingClientRect().height;
-  current.getAnimations().forEach(animation=>animation.cancel());
-  current.className=next.className;current.style.cssText=next.style.cssText;
+  const previousWidth=shrinking?current.getBoundingClientRect().width:0;
+  const previousHeight=shrinking?current.getBoundingClientRect().height:0;
+  if(current.className!==next.className)current.className=next.className;
+  if(current.style.cssText!==next.style.cssText)current.style.cssText=next.style.cssText;
   for(const name of Object.keys(current.dataset))if(!(name in next.dataset))delete current.dataset[name];
   for(const [name,value] of Object.entries(next.dataset))current.dataset[name]=value;
   current.title=next.title;current.onclick=next.onclick;
+  const currentPill=current.querySelector('.pill'),nextPill=next.querySelector('.pill');
+  if(currentPill&&nextPill&&!!currentPill.querySelector('img')!==!!nextPill.querySelector('img'))currentPill.replaceChildren(...nextPill.childNodes);
   const image=current.querySelector('img'),nextImage=next.querySelector('img');
   if(image&&nextImage&&image.getAttribute('src')!==nextImage.getAttribute('src')){
    image.src=nextImage.src;image.alt=nextImage.alt;
@@ -91,6 +93,7 @@ function commitNewTilePins(layer,staging){
    ghost.querySelectorAll('.logo-wrap,.pin-copy').forEach(child=>child.animate([{opacity:1},{opacity:0,transform:'scale(.4)'}],{duration:200,fill:'forwards'}));
    animation.finished.catch(()=>{}).finally(()=>ghost.remove());
   }
+  if(current.parentElement!==layer)layer.append(current);
   retained.add(current);
  }
  for(const el of [...layer.children])if(el!==staging&&!retained.has(el)&&!el.classList.contains('new-pin-collapse-ghost'))el.remove();
@@ -112,13 +115,15 @@ function renderNewTilePins(layer,source){
  staging.className='new-pin-staging';
  staging.style.cssText='position:absolute;inset:0;visibility:hidden;pointer-events:none';
  staging.setAttribute('aria-hidden','true');layer.append(staging);
- const z=getQuadkeyZoom(map.getZoom()),plan=getNewTilePlan(source,z);
- const size=getActiveMapSize();
- const inViewport=p=>{
-  const pt=projectActive([p.lng,p.lat]);
-  return pt.x>=0&&pt.x<=size.clientWidth&&pt.y>=0&&pt.y<=size.clientHeight;
- };
- const candidates=plan.logos.slice().sort(compareStable);
+ const z=getQuadkeyZoom(map.getZoom()),plan=getNewTilePlan(source,z,newPinCacheTiles(z));
+ const size=getActiveMapSize(),virtual=new Map(),screenPoints=new Map();
+ const project=p=>{if(!screenPoints.has(p.pinId))screenPoints.set(p.pinId,projectActive([p.lng,p.lat]));return screenPoints.get(p.pinId);};
+ const inViewport=p=>{const pt=project(p);return pt.x>=0&&pt.y>=0&&pt.x<=size.clientWidth&&pt.y<=size.clientHeight;};
+ const dotVisible=p=>{const pt=project(p);return newPinRectVisible({left:pt.x-8,right:pt.x+8,top:pt.y-8,bottom:pt.y+8},size.clientWidth,size.clientHeight);};
+ const candidates=plan.logos.slice().sort(compareStable).filter(p=>{
+  const pt=project(p),visible=newPinRectVisible({left:pt.x-18,right:pt.x+10,top:pt.y-14,bottom:pt.y+14},size.clientWidth,size.clientHeight);
+  if(!visible)virtual.set(p.pinId,{p,state:'compact'});return visible;
+ });
  const expandedPartners=new Set(),secondaryPartners=new Set();
  const compactByPartner=new Map();
  const occupied=[],entries=[];
@@ -129,26 +134,19 @@ function renderNewTilePins(layer,source){
   const pt=projectActive([selected.lng,selected.lat]);
   occupied.push(newPinSafeRect({left:pt.x-30,right:pt.x+30,top:pt.y-75,bottom:pt.y+5}));
  }
- function marker(p){
-  const pt=projectActive([p.lng,p.lat]),el=document.createElement('div');
-  el.className='marker new-tile-pin';el.dataset.pinId=String(p.pinId);
-  el.style.left=pt.x+'px';el.style.top=pt.y+'px';
-  const pill=document.createElement('div');pill.className='pill';
-  const wrap=document.createElement('span');wrap.className='logo-wrap';
-  const logo=document.createElement('span');logo.className='logo';
-  const image=document.createElement('img');image.src=p.logo;image.alt=p.name;
-  logo.append(image);wrap.append(logo);pill.append(wrap);
-  const copy=document.createElement('span');copy.className='pin-copy';
-  for(const [className,text] of [['name',p.name],['cash',p.cashLabel||`Кэшбэк ${p.cash}%`]]){
-   const span=document.createElement('span');span.className=className;span.textContent=text;copy.append(span);
-  }
-  pill.append(copy);el.append(pill);el.title=`${p.name} · ${p.cashLabel||`Кэшбэк ${p.cash}%`} · Вес ${p.partnerWeight}`;
-  el.onclick=()=>selectPoint(p);staging.append(el);
+ function marker(p,state='expanded'){
+  const pt=project(p),el=createNewPinElement(p,state);
+  el.style.left=pt.x+'px';el.style.top=pt.y+'px';staging.append(el);
   return {p,el,pt};
+ }
+ function appendDot(p){
+  if(!dotVisible(p)){virtual.set(p.pinId,{p,state:'dot'});return;}
+  dot(marker(p,'dot'));
  }
  function dot(entry){
   const {p,el}=entry;
   el.classList.remove('compact','new-logic-compact');el.classList.add('partner-dot');
+  el.querySelector('.pill').replaceChildren();
   el.querySelector('.pill').style.width='16px';
   el.querySelector('.pill').style.backgroundColor=newPartnerDotColors.get(p.name)||p.color;
   el.style.zIndex='4';el.dataset.state='dot';pinDisplayState.set(String(p.pinId),'dot');dots++;
@@ -198,9 +196,14 @@ function renderNewTilePins(layer,source){
   const {tile,el}=entry;
   const mean=members.reduce((sum,p)=>({lng:sum.lng+p.lng/members.length,lat:sum.lat+p.lat/members.length}),{lng:0,lat:0});
   const nw=projectActive(tileToLngLat(tile.x,tile.y,z)),se=projectActive(tileToLngLat(tile.x+1,tile.y+1,z));
-  const positions=[projectActive([mean.lng,mean.lat]),...members.map(p=>projectActive([p.lng,p.lat]))];
-  for(let y=nw.y+26;y<=se.y-26;y+=26)for(let x=nw.x+26;x<=se.x-26;x+=26)positions.push({x,y});
-  const pt=positions.find(pt=>!occupied.some(rect=>newPinRectsOverlap(rect,newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18}))));
+  const free=pt=>!occupied.some(rect=>newPinRectsOverlap(rect,newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18})));
+  let pt=projectActive([mean.lng,mean.lat]);
+  if(!free(pt)){
+   pt=null;
+   for(const member of members){const candidate=project(member);if(free(candidate)){pt=candidate;break;}}
+   if(!pt){const left=Math.max(nw.x+26,26),top=Math.max(nw.y+26,26),right=Math.min(se.x-26,size.clientWidth-26),bottom=Math.min(se.y-26,size.clientHeight-26);if(left<=right&&top<=bottom)for(const candidate of [{x:left,y:top},{x:right,y:top},{x:left,y:bottom},{x:right,y:bottom}])if(free(candidate)){pt=candidate;break;}}
+   if(!pt)search:for(const visibleOnly of [true,false])for(let y=nw.y+26;y<=se.y-26;y+=26)for(let x=nw.x+26;x<=se.x-26;x+=26){if((!visibleOnly||(x>=18&&x<=size.clientWidth-18&&y>=18&&y<=size.clientHeight-18))&&free({x,y})){pt={x,y};break search;}}
+  }
   if(!pt)return false;
   const lngLat=unprojectActive([pt.x,pt.y]);el.dataset.lng=lngLat.lng;el.dataset.lat=lngLat.lat;
   el.style.left=pt.x+'px';el.style.top=pt.y+'px';el.style.zIndex='500';
@@ -213,7 +216,7 @@ function renderNewTilePins(layer,source){
   const {p,el}=entry;
   if(entry.type==='cluster'){
    if(placeCluster(entry,entry.tile.items))clustered+=entry.tile.count;
-   else{el.remove();entry.tile.items.forEach(p=>dot(marker(p)));}
+   else{el.remove();entry.tile.items.forEach(appendDot);}
    continue;
   }
   if(expandedPartners.has(p.name)&&(secondaryPartners.has(p.name)||!inViewport(p))){
@@ -232,13 +235,18 @@ function renderNewTilePins(layer,source){
  // labels survived, promote lower-weight reserve points, including members
  // of clusters, without losing or double-counting any source point.
  const promoted=new Set();
+ const clusterOwners=new Map();for(const item of entries)if(item.type==='cluster')for(const p of item.tile.items)clusterOwners.set(p.pinId,item);
  const reserves=plan.dots.concat(plan.clusters.flatMap(tile=>tile.items)).sort(compareStable);
  for(const p of reserves){
   if(expanded>=4)break;
   if(expandedPartners.has(p.name)||!inViewport(p))continue;
+  const ownCluster=clusterOwners.get(p.pinId),pt=project(p);
+  const minimum={left:viewport.left+pt.x-18,right:viewport.left+pt.x+10,top:viewport.top+pt.y-14,bottom:viewport.top+pt.y+14};
+  // Full text contains this logo-sized box. Reject impossible candidates
+  // before allocating elements or measuring text.
+  if(!fullyInside(minimum,p)||occupied.some(rect=>(!ownCluster||rect.owner!==ownCluster)&&newPinRectsOverlap(rect,newPinSafeRect(minimum))&&(!rect.owner||rect.owner.type!=='pin'||rect.owner.el.dataset.state!=='compact'||compareNewPinWeight(p,rect.owner.p)>=0)))continue;
   const entry={...marker(p),type:'pin'};
   entry.fullRect=entry.el.getBoundingClientRect();
-  const ownCluster=entries.find(item=>item.type==='cluster'&&item.tile.items.some(member=>member.pinId===p.pinId));
   const blockers=occupied.filter(rect=>(!ownCluster||rect.owner!==ownCluster)&&newPinRectsOverlap(rect,newPinSafeRect(entry.fullRect)));
   // A reserve label may displace lower-weight logos, never a higher weight
   // or an already expanded offer. Dots do not reserve space.
@@ -264,25 +272,19 @@ function renderNewTilePins(layer,source){
    entry.el.remove();clustered-=remaining.length;
    const index=occupied.findIndex(rect=>rect.owner===entry);
    if(index>=0)occupied.splice(index,1);
-   remaining.forEach(p=>dot(marker(p)));
+   remaining.forEach(appendDot);
   }else{
    entry.el.dataset.memberIds=remaining.map(p=>p.pinId).join(',');
    entry.el.querySelector('.cluster-count-text').textContent=remaining.length>99?'99+':String(remaining.length);
    entry.el.title=`Кластер · ${remaining.length} точек · тайл ${entry.tile.key}`;
   }
  }
- plan.dots.filter(p=>!promoted.has(p.pinId)).forEach(p=>dot(marker(p)));
- // Keep a small, inert dot buffer ready outside the active viewport. New
- // regions revealed during a gesture do not need an intermediate layout.
- const represented=new Set(plan.logos.concat(plan.dots,plan.clusters.flatMap(tile=>tile.items)).map(p=>p.pinId));
- for(const p of source){
-  if(p.selected||represented.has(p.pinId))continue;
-  const pt=projectActive([p.lng,p.lat]);
-  if(pt.x< -128||pt.y< -128||pt.x>size.clientWidth+128||pt.y>size.clientHeight+128)continue;
-  const entry=marker(p);entry.el.classList.add('new-pin-overscan');dot(entry);
- }
+ plan.dots.filter(p=>!promoted.has(p.pinId)).forEach(appendDot);
+ staging.querySelectorAll('.new-tile-pin').forEach(el=>{el.style.width=el.querySelector('.pill').style.width;});
  commitNewTilePins(layer,staging);
+ registerNewPinScene(layer,source,virtual);
  newPinMotion.hasLayout=true;newPinMotion.revision++;
+ if(typeof refreshOfferList==='function')refreshOfferList();
  document.getElementById('shown').textContent=expanded+compact+dots;
  document.getElementById('compactCount').textContent=compact;
  document.getElementById('hiddenCount').textContent=clustered;
