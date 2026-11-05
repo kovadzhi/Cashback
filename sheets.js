@@ -1,4 +1,4 @@
-/* The map camera and canvas stay fixed; sheets only clip the active viewport, including Header. */
+/* Sheets clip the active viewport; selecting a pin centers it without changing zoom. */
 const sheetState={selected:null,closingDetail:false,closeTimer:0,viewportRenderKey:null,listExpanded:false,detailExpanded:false,listKey:'',drag:null,frame:0,focusReturn:null,motionFrame:0,motionUntil:0,motionTimer:0};
 const sheetElements={};
 const HEADER_HEIGHT=44,LIST_MAP_HEIGHT=570,DETAIL_MAP_HEIGHT=228;
@@ -185,7 +185,10 @@ function selectPoint(p){
  const logo=document.getElementById('detailLogo');logo.src=p.logo;logo.alt=p.name;
  sheetElements.detailScroll.scrollTop=0;sheetElements.wrap.classList.add('detail-open');
  sheetElements.offers.inert=true;sheetElements.offers.setAttribute('aria-hidden','true');
- layoutSheets();render();
+ layoutSheets();
+ // Offset targets the centre of the visible map without persistent camera padding.
+ map.easeTo({center:[p.lng,p.lat],offset:[0,(normalSheetTop('detail')-sheetElements.wrap.clientHeight)/2],duration:300});
+ render();
  document.getElementById('closeDetail').focus({preventScroll:true});
 }
 function finishClosingDetail(){
@@ -252,7 +255,7 @@ function attachSheetGesture(sheet,kind){
   const dy=event.clientY-drag.startY,dx=event.clientX-drag.startX;
   if(!drag.moved){
    if(Math.abs(dy)<6||Math.abs(dx)>Math.abs(dy))return;
-   drag.scrollOnly=drag.fromContent&&drag.wasReady&&dy<0;
+   drag.scrollOnly=drag.wasReady&&(drag.startScroll>0||(drag.fromContent&&dy<0));
    drag.moved=true;sheet.setPointerCapture(event.pointerId);sheet.classList.add('dragging');
   }
   if(event.cancelable)event.preventDefault();
@@ -292,6 +295,8 @@ function attachSheetGesture(sheet,kind){
  }
 }
 function initSheets(){
+ document.addEventListener('dragstart',event=>event.preventDefault());
+ document.addEventListener('selectstart',event=>event.preventDefault());
  Object.assign(sheetElements,{
   wrap:document.querySelector('.mapwrap'),offers:document.getElementById('offersSheet'),detail:document.getElementById('detailSheet'),
   list:document.getElementById('offerList'),empty:document.getElementById('emptyState'),categories:document.querySelector('.category-chips'),

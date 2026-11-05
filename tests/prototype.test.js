@@ -1,7 +1,7 @@
 (async()=>{
  const check=(name,condition,detail='')=>parent.reportTest(name,!!condition,detail);
  const tick=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
- const settle=async()=>{map.stop();await tick();await new Promise(resolve=>setTimeout(resolve,650));};
+ const settle=async()=>{await tick();await new Promise(resolve=>setTimeout(resolve,650));};
  const near=(a,b)=>Math.abs(a-b)<1;
  const box=id=>document.getElementById(id).getBoundingClientRect();
  const cameraSnapshot=()=>({center:map.getCenter().toArray(),zoom:map.getZoom(),point:map.project(USER_LOCATION)});
@@ -101,11 +101,33 @@
   const toggle=document.getElementById('newLogicToggle');toggle.checked=true;toggle.onchange();await settle();
   check('Переключение логики сохраняет выбранное предложение',sheetState.selected===chosen&&!sheetElements.detail.hidden&&near(box('markers').height,272));
   toggle.checked=false;toggle.onchange();await settle();
-  check('Выбор пина не меняет центр и зум',cameraUnchanged(beforeSelection));
+  check('Выбранный пин центрирован в видимой карте без изменения зума',near(map.project([chosen.lng,chosen.lat]).x,187.5)&&near(map.project([chosen.lng,chosen.lat]).y,136)&&Math.abs(map.getZoom()-beforeSelection.zoom)<1e-8);
+  const afterSelection=cameraSnapshot();
   toggleSheet('detail');await settle();
   check('Подъём карточки ограничен высотой содержимого',near(box('detailSheet').top,expandedSheetTop('detail'))&&box('detailSheet').top>=44);
-  check('Раскрытие карточки не меняет положение карты',cameraUnchanged(beforeSelection));
+  check('Раскрытие карточки не меняет положение карты',cameraUnchanged(afterSelection));
   check('Карточка разрешает прокрутку только при максимальном раскрытии',getComputedStyle(sheetElements.detailScroll).overflowY==='auto');
+  // A gesture begun with a scroll offset stays a scroll until pointerup.
+  const dragDetail=(dy)=>{
+   const target=sheetElements.detailScroll;
+   target.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:99,button:0,clientX:180,clientY:200}));
+   // Synthetic pointers cannot take native capture; test the same handler with capture stubbed.
+   const capture=sheetElements.detail.setPointerCapture;
+   sheetElements.detail.setPointerCapture=()=>{};
+   window.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerId:99,clientX:180,clientY:200+dy}));
+   window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:99,clientX:180,clientY:200+dy}));
+   sheetElements.detail.setPointerCapture=capture;
+  };
+  const scrollFixture=document.createElement('div');scrollFixture.style.minHeight='400px';
+  sheetElements.detail.querySelector('.detail-content').append(scrollFixture);layoutSheets();await settle();
+  sheetElements.detailScroll.scrollTop=80;await tick();
+  dragDetail(40);
+  check('Жест вниз прокручивает содержимое обратно',sheetElements.detailScroll.scrollTop===40&&sheetState.selected===chosen&&sheetState.detailExpanded);
+  dragDetail(120);
+  check('Достижение верха не закрывает шторку в том же жесте',sheetElements.detailScroll.scrollTop===0&&sheetState.selected===chosen&&sheetState.detailExpanded);
+  scrollFixture.remove();
+  check('Фокус не рисует рамку',getComputedStyle(document.getElementById('closeDetail')).outlineStyle==='none');
+  check('Текст и изображения не выделяются',getComputedStyle(document.getElementById('detailName')).userSelect==='none'&&getComputedStyle(document.getElementById('detailLogo')).webkitUserDrag==='none');
   map.zoomTo(map.getZoom()+1,{duration:0});await tick();const beforeClose=cameraSnapshot();
   document.getElementById('closeDetail').click();
   check('Закрытие карточки анимировано вниз',!sheetElements.detail.hidden&&parseFloat(sheetElements.detail.style.top)>812);
