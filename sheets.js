@@ -1,5 +1,5 @@
-/* Map and sheet coordinates share the same active viewport (below the 44 px header). */
-const sheetState={selected:null,returnCamera:null,listExpanded:false,detailExpanded:false,listKey:'',drag:null,frame:0,focusReturn:null,motionFrame:0,motionUntil:0,motionTimer:0,viewportHeight:null,viewportWidth:null};
+/* The map camera and canvas stay fixed; sheets only clip the active viewport, including Header. */
+const sheetState={selected:null,closingDetail:false,closeTimer:0,viewportRenderKey:null,listExpanded:false,detailExpanded:false,listKey:'',drag:null,frame:0,focusReturn:null,motionFrame:0,motionUntil:0,motionTimer:0};
 const sheetElements={};
 const HEADER_HEIGHT=44,LIST_MAP_HEIGHT=570,DETAIL_MAP_HEIGHT=228;
 function normalSheetTop(kind){
@@ -18,25 +18,22 @@ function getActiveMapSize(){
  const layer=document.getElementById('markers');
  return {clientWidth:layer.clientWidth,clientHeight:layer.clientHeight};
 }
-function projectActive(lngLat){const pt=map.project(lngLat);return {x:pt.x,y:pt.y-HEADER_HEIGHT};}
-function unprojectActive(point){return map.unproject([point[0],point[1]+HEADER_HEIGHT]);}
+function projectActive(lngLat){return map.project(lngLat);}
+function unprojectActive(point){return map.unproject(point);}
 function getActiveMapBounds(){
  const {clientWidth:w,clientHeight:h}=getActiveMapSize();
  const bounds=new maplibregl.LngLatBounds();
  for(const point of [[0,0],[w,0],[0,h],[w,h]])bounds.extend(unprojectActive(point));
  return bounds;
 }
-function getMapPadding(){
- const h=getActiveMapSize().clientHeight;
- return {top:HEADER_HEIGHT,bottom:Math.max(0,sheetElements.wrap.clientHeight-HEADER_HEIGHT-h),left:0,right:0};
-}
-function frontSheet(){return sheetState.selected?sheetElements.detail:sheetElements.offers;}
-function sheetKind(){return sheetState.selected?'detail':'list';}
+function getMapPadding(){return {top:0,bottom:0,left:0,right:0};}
+function frontSheet(){return sheetState.selected||sheetState.closingDetail?sheetElements.detail:sheetElements.offers;}
+function sheetKind(){return sheetState.selected||sheetState.closingDetail?'detail':'list';}
 function isSheetAtMaximum(sheet,kind){
  return Math.abs(sheet.getBoundingClientRect().top-sheetElements.wrap.getBoundingClientRect().top-expandedSheetTop(kind))<1;
 }
 function updateSheetPresentation(){
- const sheet=frontSheet(),kind=sheetKind();
+ const sheet=frontSheet();
  const top=sheet.getBoundingClientRect().top-sheetElements.wrap.getBoundingClientRect().top;
  const dockTop=sheetState.drag?top:parseFloat(sheet.style.top);
  const docked=dockTop<=HEADER_HEIGHT+.5;
@@ -52,41 +49,37 @@ function updateSheetPresentation(){
   if(ready)current.classList.remove('expanding');
  }
  const draggingUp=sheetState.drag&&sheetState.drag.moved&&sheetState.drag.lastY<sheetState.drag.startY;
- sheetElements.wrap.classList.toggle('controls-hidden',!!sheetState.selected||sheetState.listExpanded||!!draggingUp||top<normalSheetTop('list')-.5);
+ sheetElements.wrap.classList.toggle('controls-hidden',!!sheetState.selected||sheetState.closingDetail||sheetState.listExpanded||!!draggingUp||top<normalSheetTop('list')-.5);
 }
 function updateActiveViewport(){
- const sheet=frontSheet();
- const top=sheet.getBoundingClientRect().top-sheetElements.wrap.getBoundingClientRect().top;
- const height=Math.max(0,top-HEADER_HEIGHT);
- const oldHeight=getActiveMapSize().clientHeight;
+ const top=frontSheet().getBoundingClientRect().top-sheetElements.wrap.getBoundingClientRect().top;
+ const height=Math.min(sheetElements.wrap.clientHeight,Math.max(0,top));
  sheetElements.wrap.style.setProperty('--active-map-height',height+'px');
- if(map){
-  const width=getActiveMapSize().clientWidth;
-  // Changing MapLibre padding stops an in-flight camera transition. Update it only
-  // when viewport geometry changes, so idle sheet observers never cancel fitBounds.
-  if(sheetState.viewportHeight!==height||sheetState.viewportWidth!==width){
-   sheetState.viewportHeight=height;sheetState.viewportWidth=width;
-   const padding=getMapPadding();
-   if(sheetState.selected){const p=sheetState.selected;map.easeTo({padding,center:[p.lng,p.lat],offset:[0,45],duration:0});}
-   else map.setPadding(padding);
-  }
-  if(Math.abs(oldHeight-height)>.5)render();
- }
+ // No camera, padding, resize or pin reconstruction during a sheet animation.
  updateSheetPresentation();
+}
+function settleSheetLayout(){
+ if(sheetState.drag)return;
+ if(sheetState.closingDetail&&sheetElements.detail.getBoundingClientRect().top>=sheetElements.wrap.clientHeight-1)finishClosingDetail();
+ updateActiveViewport();
+ const viewport=getActiveMapSize();
+ const key=[sheetKind(),viewport.clientWidth,viewport.clientHeight,sheetState.selected?.pinId??'none'].join(':');
+ if(key!==sheetState.viewportRenderKey){sheetState.viewportRenderKey=key;if(mapReady)render();}
+ refreshOfferList();
 }
 function watchSheetMotion(){
  if(sheetState.motionFrame)return;
  function frame(){
   sheetState.motionFrame=0;updateActiveViewport();
   if(performance.now()<sheetState.motionUntil)sheetState.motionFrame=requestAnimationFrame(frame);
-  else{updateSheetPresentation();scheduleOfferRefresh();}
+  else{settleSheetLayout();}
  }
  sheetState.motionFrame=requestAnimationFrame(frame);
 }
-function setSheetPosition(kind,top,{centerSelected=false}={}){
+function setSheetPosition(kind,top){
  const sheet=kind==='detail'?sheetElements.detail:sheetElements.offers;
  sheet.style.top=top+'px';
- if(kind==='list'&&sheetState.selected)return;
+ if(kind==='list'&&(sheetState.selected||sheetState.closingDetail))return;
  const expanded=sheetState[kind==='detail'?'detailExpanded':'listExpanded'];
  sheet.classList.remove('scroll-ready');sheet.classList.add('expanding');
  if(!expanded&&!sheetState.drag)sheet.querySelector('.sheet-scroll').scrollTop=0;
@@ -95,17 +88,15 @@ function setSheetPosition(kind,top,{centerSelected=false}={}){
   sheetState.motionUntil=performance.now()+(matchMedia('(prefers-reduced-motion: reduce)').matches?0:300);
   updateActiveViewport();watchSheetMotion();
   clearTimeout(sheetState.motionTimer);
-  sheetState.motionTimer=setTimeout(()=>{if(!sheetState.drag){updateActiveViewport();refreshOfferList();}},310);
+  sheetState.motionTimer=setTimeout(settleSheetLayout,310);
  }
- if(centerSelected&&sheetState.selected&&map){
-  const p=sheetState.selected;
-  map.easeTo({center:[p.lng,p.lat],offset:[0,45],duration:0});
- }
+
 }
 function layoutSheets(){
  sheetElements.wrap.style.setProperty('--map-controls-top',(HEADER_HEIGHT+(normalSheetTop('list')-HEADER_HEIGHT)/2-82)+'px');
- setSheetPosition('list',sheetState.listExpanded?expandedSheetTop('list'):normalSheetTop('list'));
- if(sheetState.selected)setSheetPosition('detail',sheetState.detailExpanded?expandedSheetTop('detail'):normalSheetTop('detail'),{centerSelected:true});
+ setSheetPosition('list',sheetState.selected?sheetElements.wrap.clientHeight+32:sheetState.listExpanded?expandedSheetTop('list'):normalSheetTop('list'));
+ if(sheetState.selected)setSheetPosition('detail',sheetState.detailExpanded?expandedSheetTop('detail'):normalSheetTop('detail'));
+ else if(sheetState.closingDetail)setSheetPosition('detail',sheetElements.wrap.clientHeight+32);
  const grip=sheetElements.offers.querySelector('.sheet-grip');
  grip.setAttribute('aria-expanded',String(sheetState.listExpanded));
  grip.setAttribute('aria-label',sheetState.listExpanded?'Свернуть список предложений':'Развернуть список предложений');
@@ -173,9 +164,16 @@ function renderSelectedMarker(){
  el.onclick=()=>sheetElements.detail.focus({preventScroll:true});layer.append(el);
 }
 function selectPoint(p){
- if(!sheetState.selected){
-  sheetState.returnCamera=map?{center:map.getCenter().toArray(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()}:null;
+ const wasOpen=!!sheetState.selected;
+ clearTimeout(sheetState.closeTimer);sheetState.closingDetail=false;
+ if(!wasOpen){
   sheetState.focusReturn=document.activeElement;
+  // Establish the off-screen starting position before starting the slide-in transition.
+  sheetElements.detail.classList.add('no-motion');
+  sheetElements.detail.style.top=(sheetElements.wrap.clientHeight+32)+'px';
+  sheetElements.detail.hidden=false;
+  void sheetElements.detail.offsetHeight;
+  sheetElements.detail.classList.remove('no-motion');
  }
  points.concat(goodsPoints).forEach(q=>q.selected=false);p.selected=true;
  sheetState.selected=p;sheetState.listExpanded=false;sheetState.detailExpanded=false;
@@ -185,24 +183,27 @@ function selectPoint(p){
  document.getElementById('detailAbout').textContent=info?.[1]||'';
  document.getElementById('detailCash').textContent='Кэшбэк '+p.cash+'%';
  const logo=document.getElementById('detailLogo');logo.src=p.logo;logo.alt=p.name;
- sheetElements.detail.hidden=false;sheetElements.detailScroll.scrollTop=0;
- sheetElements.wrap.classList.add('detail-open');
+ sheetElements.detailScroll.scrollTop=0;sheetElements.wrap.classList.add('detail-open');
  sheetElements.offers.inert=true;sheetElements.offers.setAttribute('aria-hidden','true');
- layoutSheets();
- if(mapReady)map.easeTo({center:[p.lng,p.lat],zoom:Math.max(14,map.getZoom()),offset:[0,45],duration:0});
- render();document.getElementById('closeDetail').focus({preventScroll:true});
+ layoutSheets();render();
+ document.getElementById('closeDetail').focus({preventScroll:true});
+}
+function finishClosingDetail(){
+ if(!sheetState.closingDetail)return;
+ sheetState.closingDetail=false;sheetElements.detail.hidden=true;
+ sheetElements.wrap.classList.remove('detail-open');
+ sheetElements.offers.inert=false;sheetElements.offers.removeAttribute('aria-hidden');
+ updateActiveViewport();
+ sheetElements.offers.querySelector('.sheet-grip').focus({preventScroll:true});
 }
 function closeSelectedOffer(){
  if(!sheetState.selected)return;
- const returnCamera=sheetState.returnCamera;
  points.concat(goodsPoints).forEach(p=>p.selected=false);
- sheetState.selected=null;sheetState.detailExpanded=false;sheetState.listExpanded=false;
- sheetElements.detail.hidden=true;sheetElements.wrap.classList.remove('detail-open');
- sheetElements.offers.inert=false;sheetElements.offers.removeAttribute('aria-hidden');
- sheetElements.offers.querySelector('.sheet-grip').focus({preventScroll:true});
- layoutSheets();
- if(mapReady&&returnCamera)map.easeTo({...returnCamera,duration:250});
- sheetState.returnCamera=null;render();
+ sheetState.selected=null;sheetState.closingDetail=true;
+ sheetState.detailExpanded=false;sheetState.listExpanded=false;
+ layoutSheets();render();
+ clearTimeout(sheetState.closeTimer);
+ sheetState.closeTimer=setTimeout(()=>{finishClosingDetail();settleSheetLayout();},310);
 }
 function toggleSheet(kind){
  const key=kind==='detail'?'detailExpanded':'listExpanded';
@@ -214,7 +215,7 @@ function setSheetExpanded(kind,expanded){
 function attachSheetGesture(sheet,kind){
  const scroll=sheet.querySelector('.sheet-scroll');
  sheet.addEventListener('transitionend',event=>{
-  if(event.target===sheet&&event.propertyName==='top'&&!sheetState.drag){updateActiveViewport();scheduleOfferRefresh();}
+  if(event.target===sheet&&event.propertyName==='top'&&!sheetState.drag)settleSheetLayout();
  });
  // Wheel/trackpad input first opens the sheet. Native scrolling starts only at its maximum.
  sheet.addEventListener('wheel',event=>{
@@ -241,9 +242,8 @@ function attachSheetGesture(sheet,kind){
   if(sheet!==frontSheet()||event.button!==0||event.target.closest('.detail-close'))return;
   const handle=event.target.closest('.sheet-grip,.detail-heading,.category-chips');
   const fromContent=!handle,ready=sheet.classList.contains('scroll-ready');
-  if(fromContent&&ready&&scroll.scrollTop>0)return;
   sheetState.drag={kind,pointerId:event.pointerId,startY:event.clientY,startX:event.clientX,
-   startTop:parseFloat(sheet.style.top)||normalSheetTop(kind),lastY:event.clientY,lastTime:performance.now(),velocity:0,
+   startTop:sheet.getBoundingClientRect().top-sheetElements.wrap.getBoundingClientRect().top,startScroll:scroll.scrollTop,lastY:event.clientY,lastTime:performance.now(),velocity:0,
    moved:false,fromContent,wasReady:ready,wasExpanded:sheetState[kind==='detail'?'detailExpanded':'listExpanded']};
  });
  // Window listeners retain the gesture even when the pointer leaves a collapsed sheet.
@@ -252,15 +252,16 @@ function attachSheetGesture(sheet,kind){
   const dy=event.clientY-drag.startY,dx=event.clientX-drag.startX;
   if(!drag.moved){
    if(Math.abs(dy)<6||Math.abs(dx)>Math.abs(dy))return;
-   if(drag.fromContent&&drag.wasReady&&dy<0){sheetState.drag=null;return;}
+   drag.scrollOnly=drag.fromContent&&drag.wasReady&&dy<0;
    drag.moved=true;sheet.setPointerCapture(event.pointerId);sheet.classList.add('dragging');
   }
   if(event.cancelable)event.preventDefault();
   const now=performance.now();drag.velocity=(event.clientY-drag.lastY)/Math.max(1,now-drag.lastTime);drag.lastY=event.clientY;drag.lastTime=now;
+  if(drag.scrollOnly){scroll.scrollTop=drag.startScroll-dy;return;}
   const limit=kind==='detail'?sheetElements.wrap.clientHeight:normalSheetTop(kind);
   const min=expandedSheetTop(kind),rawTop=drag.startTop+dy;
   const top=Math.max(min,Math.min(limit,rawTop));
-  setSheetPosition(kind,top,{centerSelected:kind==='detail'});
+  setSheetPosition(kind,top);
   // A continued upward swipe may scroll only after the sheet has reached its maximum.
   if(rawTop<min)scroll.scrollTop=min-rawTop;
  },{passive:false});
@@ -270,9 +271,10 @@ function attachSheetGesture(sheet,kind){
   if(sheet.hasPointerCapture(event.pointerId))sheet.releasePointerCapture(event.pointerId);
   if(!drag.moved)return;
   sheet.dataset.suppressClick='true';setTimeout(()=>delete sheet.dataset.suppressClick,0);
+  if(drag.scrollOnly){updateSheetPresentation();return;}
   if(cancelled){layoutSheets();render();return;}
   const dy=event.clientY-drag.startY,current=parseFloat(sheet.style.top);
-  if(kind==='detail'&&!drag.wasExpanded&&(dy>64||(dy>20&&drag.velocity>.6))){closeSelectedOffer();return;}
+  if(kind==='detail'&&(dy>64||(dy>20&&drag.velocity>.6))){closeSelectedOffer();return;}
   const min=expandedSheetTop(kind),normal=normalSheetTop(kind);
   setSheetExpanded(kind,dy< -35?true:dy>35?false:current<(min+normal)/2);
  }

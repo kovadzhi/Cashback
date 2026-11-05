@@ -114,7 +114,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}.hint{font-size:11px;color
 }
 
 </style>
-<link rel="stylesheet" href="sheets.css?v=20261105-header44">
+<link rel="stylesheet" href="sheets.css?v=20261105-stable-camera">
 </head>
 <body>
 <div class="app">
@@ -304,8 +304,6 @@ function getTileClusters(source,tileZoom){
  const visibleTiles=getVisibleTiles(tileZoom);
  const tileBuckets=new Map(visibleTiles.map(t=>[t.key,{...t,items:[]}]));
  source.forEach(p=>{
-  const pt=projectActive([p.lng,p.lat]),viewport=getActiveMapSize();
-  if(pt.x<0||pt.x>viewport.clientWidth||pt.y<0||pt.y>viewport.clientHeight)return;
   const t=lngLatToTile(p.lng,p.lat,tileZoom);
   const key=tileToQuadkey(t.x,t.y,tileZoom);
   const bucket=tileBuckets.get(key);
@@ -329,7 +327,7 @@ function renderTileClusters(layer,source,z){
  if(z<MIN_POINT_TILE_ZOOM||z>MAX_POINT_TILE_ZOOM){document.getElementById('shown').textContent=0;document.getElementById('compactCount').textContent=0;document.getElementById('hiddenCount').textContent=0;document.getElementById('tileSummary').innerHTML=`Уровень тайлов: <b>${z}</b>.`;return;}
  document.getElementById('tileSummary').innerHTML=`Уровень тайлов: <b>${z}</b> · видимых тайлов: <b>${visibleTiles.length}</b> · точек в области тайлов: <b>${singles.length+clusters.reduce((n,g)=>n+g.count,0)}</b>`;
  renderExpandedPins(layer,singles);
- if(showClusters.checked&&showHidden.checked){clusters.forEach(g=>{const p=g.representative,pt=mapReady?projectActive([p.lng,p.lat]):{x:p.x*layer.clientWidth,y:p.y*layer.clientHeight};const el=document.createElement('div');el.className='cluster';el.style.left=pt.x+'px';el.style.top=pt.y+'px';const countBox=document.createElement('span');countBox.className='cluster-count';const countText=document.createElement('span');countText.className='cluster-count-text';countText.textContent=g.count>99?'99+':String(g.count);countBox.appendChild(countText);el.appendChild(countBox);el.title=`Кластер · ${g.count} точек · тайл ${g.key}`;el.onclick=()=>{if(mapReady){const next=Math.min(MAX_MAP_ZOOM,map.getZoom()+1);map.easeTo({center:[p.lng,p.lat],zoom:next,duration:350});}else{zoom=Math.min(23,zoom+1);zoomInput.value=zoom;zoomVal.textContent=zoom;render();}};layer.appendChild(el);hidden+=g.count;});}
+ if(showClusters.checked&&showHidden.checked){clusters.forEach(g=>{const p=g.representative,pt=mapReady?projectActive([p.lng,p.lat]):{x:p.x*layer.clientWidth,y:p.y*layer.clientHeight};const el=document.createElement('div');el.className='cluster';el.dataset.pinId=String(p.pinId);el.dataset.clusterKey=g.key;el.style.left=pt.x+'px';el.style.top=pt.y+'px';const countBox=document.createElement('span');countBox.className='cluster-count';const countText=document.createElement('span');countText.className='cluster-count-text';countText.textContent=g.count>99?'99+':String(g.count);countBox.appendChild(countText);el.appendChild(countBox);el.title=`Кластер · ${g.count} точек · тайл ${g.key}`;el.onclick=()=>{if(mapReady){const next=Math.min(MAX_MAP_ZOOM,map.getZoom()+1);map.easeTo({center:[p.lng,p.lat],zoom:next,duration:350});}else{zoom=Math.min(23,zoom+1);zoomInput.value=zoom;zoomVal.textContent=zoom;render();}};layer.appendChild(el);hidden+=g.count;});}
  else if(clusters.length){clusters.forEach(g=>hidden+=g.count);}
  document.getElementById('hiddenCount').textContent=hidden;
  document.getElementById('tileSummary').innerHTML=
@@ -975,11 +973,11 @@ function renderExpandedPins(layer,sourcePoints=points){
   `Зум приложения: <b>${getAppZoom(map.getZoom())}</b> · Развернутые: <b>${expanded}</b> · Компактные: <b>${compact}</b> · Проверено пересечений: <b>${candidates.length}</b>`;
 }
 
-function repositionNewLogicElements(){
- if(!mapReady||!document.getElementById('newLogicToggle').checked)return;
+function repositionMapElements(){
+ if(!mapReady)return;
  const layer=document.getElementById('markers');
  const pointById=new Map(getRenderPoints().map(p=>[String(p.pinId),p]));
- layer.querySelectorAll('.marker[data-pin-id]').forEach(el=>{
+ layer.querySelectorAll('.marker[data-pin-id],.cluster[data-pin-id]').forEach(el=>{
   const p=pointById.get(String(el.dataset.pinId));
   if(!p)return;
   const pt=projectActive([p.lng,p.lat]);
@@ -1057,31 +1055,13 @@ function initMap(){
  new maplibregl.Marker({element:userPin,anchor:'center'}).setLngLat(USER_LOCATION).addTo(map);
  map.on('load',()=>{mapReady=true;document.getElementById('notice').style.display='none';render()});
  map.on('style.load',()=>{document.getElementById('notice').style.display='none';render()});
- let lastRenderedMapZoom=map.getZoom();
  map.on('move',()=>{
-  if(document.getElementById('newLogicToggle').checked){
-   repositionNewLogicElements();
-   renderTiles();
-   updateMobileHud();
-  }else render();
+  // Move the existing DOM with the camera. Do not rebuild tile clusters during a gesture.
+  repositionMapElements();renderTiles();updateMobileHud();
  });
- map.on('moveend',()=>{
-  // После завершения перемещения пересчитываем состав кластеров и состояния пинов.
-  // Во время жеста только перемещаем существующие элементы вслед за картой.
-  if(document.getElementById('newLogicToggle').checked)render();
- });
+ map.on('moveend',()=>{render();});
  map.on('zoom',()=>{
-  zoom=getAppZoom(map.getZoom());
-  zoomInput.value=String(zoom);zoomVal.textContent=String(zoom);
-  if(!document.getElementById('newLogicToggle').checked)render();
- });
- // В новой логике пересчитываем отображение при смене уровня зума.
- map.on('zoomend',()=>{
-  const currentMapZoom=map.getZoom();
-  if(Math.abs(currentMapZoom-lastRenderedMapZoom)>1e-6){
-   lastRenderedMapZoom=currentMapZoom;
-   if(document.getElementById('newLogicToggle').checked)render();
-  }
+  zoom=getAppZoom(map.getZoom());zoomInput.value=String(zoom);zoomVal.textContent=String(zoom);
  });
  map.on('error',e=>{console.warn('MapLibre error',e.error||e);});
 }
@@ -1112,10 +1092,10 @@ function fitInitialNewLogicArea(){
  // Запас под широкие пины, чтобы они целиком оставались внутри экрана.
  const horizontalPadding=Math.min(190,Math.max(90,container.clientWidth*0.38));
  const verticalPadding=Math.min(170,Math.max(90,container.clientHeight*0.22));
- map.fitBounds(bounds,{
-  padding:{top:HEADER_HEIGHT+verticalPadding,bottom:getMapPadding().bottom+verticalPadding+24,left:horizontalPadding,right:horizontalPadding},
-  maxZoom:15,duration:550
+ const camera=map.cameraForBounds(bounds,{
+  padding:{top:verticalPadding,bottom:map.getContainer().clientHeight-normalSheetTop('list')+verticalPadding+24,left:horizontalPadding,right:horizontalPadding},maxZoom:15
  });
+ if(camera)map.easeTo({...camera,padding:getMapPadding(),duration:550});
 }
 document.getElementById('newLogicToggle').onchange=()=>{
  if(document.getElementById('newLogicToggle').checked)fitInitialNewLogicArea();
@@ -1125,6 +1105,6 @@ makePoints(1200);makeGoodsPoints();
 
 </script>
 <script src="partners.js"></script>
-<script src="sheets.js?v=20261105-header44"></script>
+<script src="sheets.js?v=20261105-stable-camera"></script>
 <script>initSheets();initMap();connectSheetsToMap();</script>
 </body></html>
