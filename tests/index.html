@@ -1,0 +1,15 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Cashback integration checks</title>
+<style>body{font:14px system-ui;margin:20px}iframe{width:375px;height:812px;border:1px solid #ddd}#results{white-space:pre-wrap} .pass{color:#146b39}.fail{color:#b22}</style>
+<h1>Проверки Cashback</h1><pre id="results">Запуск…</pre><iframe title="Прототип 375×812"></iframe>
+<script>
+window.reportTest=(name,passed,detail='')=>{
+ const results=document.getElementById('results');if(results.textContent==='Запуск…')results.textContent='';
+ const line=document.createElement('div');line.className=passed?'pass':'fail';line.textContent=(passed?'PASS: ':'FAIL: ')+name+(detail?' — '+detail:'');results.append(line);
+};
+(async()=>{
+ const html=await (await fetch('../index.html')).text();
+ const base=new URL('../',location.href).href;
+ const testScript='<script src="tests/prototype.test.js"><'+'/script>';
+ document.querySelector('iframe').srcdoc=html.replace('<head>','<head><base href="'+base+'">').replace('</body>',testScript+'</body>');
+})();
+</script></html>

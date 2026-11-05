@@ -1,0 +1,15 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cashback visual fixtures</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden}iframe{border:0;width:100%;height:100%}</style><iframe title="Визуальная проверка прототипа"></iframe>
+<script>
+(async()=>{
+ const html=await(await fetch('../index.html')).text();
+ const base=new URL('../',location.href).href;
+ const scene=new URLSearchParams(location.search).get('scene')||'new';
+ const script='<script>map.stop();'+({
+  empty:"map.jumpTo({center:[0,0],zoom:16});render();",
+  selected:"selectPoint(points.find(p=>p.name==='Штолле'));",
+  old:"map.jumpTo({center:USER_LOCATION,zoom:13});render();",
+  new:"document.getElementById('newLogicToggle').checked=true;fitInitialNewLogicArea();render();"
+ }[scene]||'render();')+'<'+'/script>';
+ document.querySelector('iframe').srcdoc=html.replace('<head>','<head><base href="'+base+'">').replace('</body>',script+'</body>');
+})();
+</script></html>

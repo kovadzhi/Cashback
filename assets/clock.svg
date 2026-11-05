@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Mask">
+<path id="Mask_2" d="M0 11C0 4.92487 4.92487 0 11 0C17.0751 0 22 4.92487 22 11C22 17.0751 17.0751 22 11 22C4.92487 22 0 17.0751 0 11ZM9.5 5H10C11.1046 5 12 5.89543 12 7V11.4073L14.2202 12.4426C15.2213 12.9095 15.6544 14.0994 15.1876 15.1005L14.9763 15.5537L9.49998 13L9.5 13V5Z" fill-rule="evenodd" clip-rule="evenodd" fill="url(#paint0_linear_0_402)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_402" x1="4" y1="4" x2="18" y2="18" gradientUnits="userSpaceOnUse">
+<stop stop-opacity="0.95"/>
+<stop offset="1" stop-opacity="0.65"/>
+</linearGradient>
+</defs>
+</svg>
