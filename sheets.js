@@ -1,7 +1,9 @@
-/* Sheets clip the active viewport; selecting a pin centers it without changing zoom. */
-const sheetState={selected:null,closingDetail:false,closeTimer:0,viewportRenderKey:null,listExpanded:false,detailExpanded:false,listKey:'',drag:null,frame:0,focusReturn:null,motionFrame:0,motionUntil:0,motionTimer:0};
+/* Sheets clip the active viewport; selecting a pin centers it between Header and the detail sheet. */
+const sheetState={selected:null,closingDetail:false,closeTimer:0,viewportRenderKey:null,listExpanded:false,listIntermediate:false,detailExpanded:false,listKey:'',drag:null,frame:0,focusReturn:null,motionFrame:0,motionUntil:0,motionTimer:0};
 const sheetElements={};
 const HEADER_HEIGHT=44,LIST_MAP_HEIGHT=570,DETAIL_MAP_HEIGHT=228;
+// The prototype labels zoom one level above MapLibre (see getAppZoom).
+const SELECTED_PIN_MIN_MAP_ZOOM=15-1;
 function normalSheetTop(kind){
  const height=sheetElements.wrap.clientHeight;
  // Preserve the Figma dimensions at standard phone sizes; retain a usable sheet on short displays.
@@ -13,6 +15,53 @@ function sheetContentHeight(kind){
 }
 function expandedSheetTop(kind){
  return Math.min(normalSheetTop(kind),Math.max(HEADER_HEIGHT,sheetElements.wrap.clientHeight-sheetContentHeight(kind)));
+}
+function intermediateSheetTop(){return Math.max(expandedSheetTop('list'),Math.min(normalSheetTop('list'),normalSheetTop('detail')));}
+function listStage(){return sheetState.listExpanded?2:sheetState.listIntermediate?1:0;}
+function setListStage(stage){
+ stopScrollMotion(sheetElements.offersScroll);
+ sheetState.listExpanded=stage===2;sheetState.listIntermediate=stage===1;
+ layoutSheets();render();
+}
+function advanceSheet(kind,direction){
+ if(kind==='list')setListStage(Math.max(0,Math.min(2,listStage()+direction)));
+ else setSheetExpanded(kind,direction>0);
+}
+// A gesture owns its scroll until release, including when it reaches an edge.
+// Inertia decays in elapsed time; rubber-band displacement springs back separately.
+const scrollMotions=new WeakMap();
+function scrollContent(scroll){return scroll.querySelector('.detail-content,.offer-list');}
+function rubberBand(distance){return Math.sign(distance)*70*(1-1/(Math.abs(distance)*.55/70+1));}
+function stopScrollMotion(scroll){
+ const state=scrollMotions.get(scroll);if(state)cancelAnimationFrame(state.frame);
+ scrollMotions.delete(scroll);
+ const content=scrollContent(scroll);if(content)content.style.transform='';
+}
+function paintScroll(scroll,position,max=Math.max(0,scroll.scrollHeight-scroll.clientHeight)){
+ scroll.scrollTop=Math.max(0,Math.min(max,position));
+ const overshoot=position<0?position:position>max?position-max:0;
+ const content=scrollContent(scroll);if(content)content.style.transform=`translateY(${-rubberBand(overshoot)}px)`;
+ return max;
+}
+function releaseScroll(scroll,velocity,position=scroll.scrollTop){
+ stopScrollMotion(scroll);
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const state={frame:0,last:performance.now(),position,max:Math.max(0,scroll.scrollHeight-scroll.clientHeight),velocity:Math.max(-2.8,Math.min(2.8,velocity))};
+ scrollMotions.set(scroll,state);
+ function frame(now){
+  const dt=Math.min(32,Math.max(1,now-state.last));state.last=now;
+  const max=state.max;
+  const edge=state.position<0?0:state.position>max?max:null;
+  if(edge!==null){
+   state.velocity+=((edge-state.position)*.00065-state.velocity*.038)*dt;
+  }else state.velocity*=Math.exp(-dt/.325e3);
+  state.position+=state.velocity*dt;
+  paintScroll(scroll,state.position,state.max);
+  const distance=state.position<0?-state.position:Math.max(0,state.position-max);
+  if(Math.abs(state.velocity)<.015&&distance<.5){stopScrollMotion(scroll);return;}
+  state.frame=requestAnimationFrame(frame);
+ }
+ state.frame=requestAnimationFrame(frame);
 }
 function getActiveMapSize(){
  const layer=document.getElementById('markers');
@@ -85,20 +134,20 @@ function setSheetPosition(kind,top){
  if(!expanded&&!sheetState.drag)sheet.querySelector('.sheet-scroll').scrollTop=0;
  if(sheetState.drag){updateActiveViewport();}
  else{
-  sheetState.motionUntil=performance.now()+(matchMedia('(prefers-reduced-motion: reduce)').matches?0:300);
+  sheetState.motionUntil=performance.now()+(matchMedia('(prefers-reduced-motion: reduce)').matches?0:500);
   updateActiveViewport();watchSheetMotion();
   clearTimeout(sheetState.motionTimer);
-  sheetState.motionTimer=setTimeout(settleSheetLayout,310);
+  sheetState.motionTimer=setTimeout(settleSheetLayout,510);
  }
 
 }
 function layoutSheets(){
  sheetElements.wrap.style.setProperty('--map-controls-top',(HEADER_HEIGHT+(normalSheetTop('list')-HEADER_HEIGHT)/2-82)+'px');
- setSheetPosition('list',sheetState.selected?sheetElements.wrap.clientHeight+32:sheetState.listExpanded?expandedSheetTop('list'):normalSheetTop('list'));
+ setSheetPosition('list',sheetState.selected?sheetElements.wrap.clientHeight+32:sheetState.listExpanded?expandedSheetTop('list'):sheetState.listIntermediate?intermediateSheetTop():normalSheetTop('list'));
  if(sheetState.selected)setSheetPosition('detail',sheetState.detailExpanded?expandedSheetTop('detail'):normalSheetTop('detail'));
  else if(sheetState.closingDetail)setSheetPosition('detail',sheetElements.wrap.clientHeight+32);
  const grip=sheetElements.offers.querySelector('.sheet-grip');
- grip.setAttribute('aria-expanded',String(sheetState.listExpanded));
+ grip.setAttribute('aria-expanded',String(listStage()>0));
  grip.setAttribute('aria-label',sheetState.listExpanded?'Свернуть список предложений':'Развернуть список предложений');
 }
 function visiblePartnerOffers(){
@@ -117,7 +166,7 @@ function visiblePartnerOffers(){
  return [...byPartner.values()].sort((a,b)=>b.p.partnerWeight-a.p.partnerWeight||a.distance-b.distance||a.p.pinId-b.p.pinId).map(item=>item.p);
 }
 function refreshOfferList(){
- if(!sheetElements.list||sheetState.selected||sheetState.drag||sheetState.listExpanded||performance.now()<sheetState.motionUntil)return;
+ if(!sheetElements.list||sheetState.selected||sheetState.drag||sheetState.listExpanded||sheetState.listIntermediate||performance.now()<sheetState.motionUntil)return;
  const offers=visiblePartnerOffers();
  const key=offers.map(p=>p.pinId+':'+p.cash).join(',');
  if(key===sheetState.listKey&&sheetElements.list.dataset.ready)return;
@@ -163,6 +212,10 @@ function renderSelectedMarker(){
  const img=document.createElement('img');img.src=p.logo;img.alt=p.name;el.querySelector('.logo').append(img);
  el.onclick=()=>sheetElements.detail.focus({preventScroll:true});layer.append(el);
 }
+function centerSelectedPoint(duration=300){
+ const p=sheetState.selected;if(!p||!mapReady)return;
+ map.easeTo({center:[p.lng,p.lat],zoom:Math.max(SELECTED_PIN_MIN_MAP_ZOOM,map.getZoom()),offset:[0,(HEADER_HEIGHT+normalSheetTop('detail')-sheetElements.wrap.clientHeight)/2],duration});
+}
 function selectPoint(p){
  const wasOpen=!!sheetState.selected;
  clearTimeout(sheetState.closeTimer);sheetState.closingDetail=false;
@@ -176,7 +229,8 @@ function selectPoint(p){
   sheetElements.detail.classList.remove('no-motion');
  }
  points.concat(goodsPoints).forEach(q=>q.selected=false);p.selected=true;
- sheetState.selected=p;sheetState.listExpanded=false;sheetState.detailExpanded=false;
+ stopScrollMotion(sheetElements.offersScroll);stopScrollMotion(sheetElements.detailScroll);
+ sheetState.selected=p;sheetState.listExpanded=false;sheetState.listIntermediate=false;sheetState.detailExpanded=false;
  const info=PARTNER_INFO[p.name];
  document.getElementById('detailName').textContent=p.name;
  document.getElementById('detailCategory').textContent=info?.[0]||p.category;
@@ -187,7 +241,7 @@ function selectPoint(p){
  sheetElements.offers.inert=true;sheetElements.offers.setAttribute('aria-hidden','true');
  layoutSheets();
  // Offset targets the centre of the visible map without persistent camera padding.
- map.easeTo({center:[p.lng,p.lat],offset:[0,(normalSheetTop('detail')-sheetElements.wrap.clientHeight)/2],duration:300});
+ centerSelectedPoint();
  render();
  document.getElementById('closeDetail').focus({preventScroll:true});
 }
@@ -201,18 +255,22 @@ function finishClosingDetail(){
 }
 function closeSelectedOffer(){
  if(!sheetState.selected)return;
+ stopScrollMotion(sheetElements.detailScroll);
  points.concat(goodsPoints).forEach(p=>p.selected=false);
  sheetState.selected=null;sheetState.closingDetail=true;
- sheetState.detailExpanded=false;sheetState.listExpanded=false;
+ sheetState.detailExpanded=false;sheetState.listExpanded=false;sheetState.listIntermediate=false;
  layoutSheets();render();
  clearTimeout(sheetState.closeTimer);
- sheetState.closeTimer=setTimeout(()=>{finishClosingDetail();settleSheetLayout();},310);
+ sheetState.closeTimer=setTimeout(()=>{finishClosingDetail();settleSheetLayout();},510);
 }
 function toggleSheet(kind){
+ if(kind==='list'){setListStage((listStage()+1)%3);return;}
  const key=kind==='detail'?'detailExpanded':'listExpanded';
  sheetState[key]=!sheetState[key];layoutSheets();render();
 }
 function setSheetExpanded(kind,expanded){
+ stopScrollMotion(kind==='list'?sheetElements.offersScroll:sheetElements.detailScroll);
+ if(kind==='list')sheetState.listIntermediate=false;
  sheetState[kind==='detail'?'detailExpanded':'listExpanded']=expanded;layoutSheets();render();
 }
 function attachSheetGesture(sheet,kind){
@@ -223,16 +281,18 @@ function attachSheetGesture(sheet,kind){
  // Wheel/trackpad input first opens the sheet. Native scrolling starts only at its maximum.
  sheet.addEventListener('wheel',event=>{
   if(sheet!==frontSheet()||!event.deltaY)return;
+  stopScrollMotion(scroll);
+  if(performance.now()<sheetState.motionUntil){event.preventDefault();return;}
   if(!sheet.classList.contains('scroll-ready')){
    event.preventDefault();
-   if(event.deltaY>0&&!sheetState[kind==='detail'?'detailExpanded':'listExpanded'])setSheetExpanded(kind,true);
+   if(event.deltaY>0&&!sheetState[kind==='detail'?'detailExpanded':'listExpanded'])advanceSheet(kind,1);
   }else if(event.deltaY<0&&scroll.scrollTop<=0){
-   event.preventDefault();setSheetExpanded(kind,false);
+   event.preventDefault();advanceSheet(kind,-1);
   }
  },{passive:false});
  sheet.addEventListener('keydown',event=>{
   if(!['ArrowDown','PageDown',' '].includes(event.key)||event.target.closest('button,input'))return;
-  if(!sheet.classList.contains('scroll-ready')){event.preventDefault();setSheetExpanded(kind,true);}
+  if(!sheet.classList.contains('scroll-ready')){event.preventDefault();advanceSheet(kind,1);}
  });
  scroll.addEventListener('scroll',()=>{
   const draggingAtMaximum=sheetState.drag?.kind===kind&&isSheetAtMaximum(sheet,kind);
@@ -242,12 +302,13 @@ function attachSheetGesture(sheet,kind){
   if(sheet.dataset.suppressClick){event.preventDefault();event.stopImmediatePropagation();}
  },true);
  sheet.addEventListener('pointerdown',event=>{
-  if(sheet!==frontSheet()||event.button!==0||event.target.closest('.detail-close'))return;
+  if(sheet!==frontSheet()||sheetState.drag||event.button!==0||event.target.closest('.detail-close'))return;
+  stopScrollMotion(scroll);
   const handle=event.target.closest('.sheet-grip,.detail-heading,.category-chips');
   const fromContent=!handle,ready=sheet.classList.contains('scroll-ready');
   sheetState.drag={kind,pointerId:event.pointerId,startY:event.clientY,startX:event.clientX,
    startTop:sheet.getBoundingClientRect().top-sheetElements.wrap.getBoundingClientRect().top,startScroll:scroll.scrollTop,lastY:event.clientY,lastTime:performance.now(),velocity:0,
-   moved:false,fromContent,wasReady:ready,wasExpanded:sheetState[kind==='detail'?'detailExpanded':'listExpanded']};
+   moved:false,stage:listStage(),scrollPosition:scroll.scrollTop,scrollMax:Math.max(0,scroll.scrollHeight-scroll.clientHeight),fromContent,wasReady:ready,wasExpanded:sheetState[kind==='detail'?'detailExpanded':'listExpanded']};
  });
  // Window listeners retain the gesture even when the pointer leaves a collapsed sheet.
  window.addEventListener('pointermove',event=>{
@@ -259,11 +320,11 @@ function attachSheetGesture(sheet,kind){
    drag.moved=true;sheet.setPointerCapture(event.pointerId);sheet.classList.add('dragging');
   }
   if(event.cancelable)event.preventDefault();
-  const now=performance.now();drag.velocity=(event.clientY-drag.lastY)/Math.max(1,now-drag.lastTime);drag.lastY=event.clientY;drag.lastTime=now;
-  if(drag.scrollOnly){scroll.scrollTop=drag.startScroll-dy;return;}
+  const now=performance.now();drag.velocity=.65*((event.clientY-drag.lastY)/Math.max(1,now-drag.lastTime))+.35*drag.velocity;drag.lastY=event.clientY;drag.lastTime=now;
+  if(drag.scrollOnly){drag.scrollPosition=drag.startScroll-dy;paintScroll(scroll,drag.scrollPosition,drag.scrollMax);return;}
   const limit=kind==='detail'?sheetElements.wrap.clientHeight:normalSheetTop(kind);
   const min=expandedSheetTop(kind),rawTop=drag.startTop+dy;
-  const top=Math.max(min,Math.min(limit,rawTop));
+  const top=rawTop<min?min+rubberBand(rawTop-min):rawTop>limit?limit+rubberBand(rawTop-limit):rawTop;
   setSheetPosition(kind,top);
   // A continued upward swipe may scroll only after the sheet has reached its maximum.
   if(rawTop<min)scroll.scrollTop=min-rawTop;
@@ -274,12 +335,25 @@ function attachSheetGesture(sheet,kind){
   if(sheet.hasPointerCapture(event.pointerId))sheet.releasePointerCapture(event.pointerId);
   if(!drag.moved)return;
   sheet.dataset.suppressClick='true';setTimeout(()=>delete sheet.dataset.suppressClick,0);
-  if(drag.scrollOnly){updateSheetPresentation();return;}
+  if(drag.scrollOnly){updateSheetPresentation();
+   const velocity=cancelled||performance.now()-drag.lastTime>100?0:-drag.velocity;
+   releaseScroll(scroll,velocity,drag.scrollPosition);return;}
   if(cancelled){layoutSheets();render();return;}
   const dy=event.clientY-drag.startY,current=parseFloat(sheet.style.top);
   if(kind==='detail'&&(dy>64||(dy>20&&drag.velocity>.6))){closeSelectedOffer();return;}
   const min=expandedSheetTop(kind),normal=normalSheetTop(kind);
-  setSheetExpanded(kind,dy< -35?true:dy>35?false:current<(min+normal)/2);
+  const velocity=performance.now()-drag.lastTime>100?0:drag.velocity;
+  const projected=current+velocity*180;
+  if(kind==='list'){
+   const stops=[normal,intermediateSheetTop(),min];
+   // Each gesture visits the next detent before it may open completely.
+   const low=Math.max(0,drag.stage-1),high=Math.min(2,drag.stage+1);
+   let target=drag.stage;
+   if(dy< -35||velocity<-.35)target=high;
+   else if(dy>35||velocity>.35)target=low;
+   else for(let i=low;i<=high;i++)if(Math.abs(stops[i]-projected)<Math.abs(stops[target]-projected))target=i;
+   setListStage(target);
+  }else setSheetExpanded(kind,dy< -35||velocity<-.35?true:dy>35?false:projected<(min+normal)/2);
  }
  window.addEventListener('pointerup',event=>finish(event));
  window.addEventListener('pointercancel',event=>finish(event,true));
@@ -310,7 +384,10 @@ function initSheets(){
  };
  document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSelectedOffer();});
  attachSheetGesture(sheetElements.offers,'list');attachSheetGesture(sheetElements.detail,'detail');
- window.addEventListener('resize',()=>{if(map)map.resize();layoutSheets();render();});
+ window.addEventListener('resize',()=>{
+  stopScrollMotion(sheetElements.offersScroll);stopScrollMotion(sheetElements.detailScroll);
+  if(map)map.resize();layoutSheets();if(sheetState.selected)centerSelectedPoint(0);render();
+ });
  layoutSheets();
 }
 function connectSheetsToMap(){
