@@ -1,0 +1,46 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Проверки движения пинов</title>
+<style>body{font:14px system-ui;margin:16px;background:#eee}button,select{font:inherit;margin:4px;padding:8px}iframe{border:0;background:white}#live{display:block}pre{white-space:pre-wrap}.pass{color:green}.fail{color:#b22}#frames{display:flex;gap:12px;align-items:start;flex-wrap:wrap}.frame h3{margin:8px 0}</style>
+<h1>Покадровая проверка новой логики</h1><label>Экран <select id="size"><option>375x812</option><option>320x568</option><option>360x800</option><option>390x844</option><option>430x932</option><option>768x1024</option></select></label>
+<label>Сценарий <select id="scenario"><option value="redraw">Повторный рендер</option><option value="pan">Панорама вправо</option><option value="pan-back">Панорама обратно</option><option value="zoom-in">Приближение</option><option value="zoom-out">Отдаление</option><option value="fractional">Дробный зум</option><option value="reverse">Прерывание жеста</option><option value="cluster">Раскрытие кластера</option><option value="selected">Выбранный пин</option><option value="toggle">Переключение логики</option></select></label>
+<button id="run">Проверить сценарий</button><button id="matrix">Прогнать 60 сценариев</button>
+<pre id="status">Загрузка…</pre><div id="frames"></div><h2>Живой прототип</h2><iframe id="live" title="Тестируемая карта"></iframe><pre id="report"></pre>
+<script>
+const live=document.querySelector('#live'),status=document.querySelector('#status'),report=document.querySelector('#report');
+let original='';
+const sizes=['375x812','320x568','360x800','390x844','430x932','768x1024'];
+const scenarios=['redraw','pan','pan-back','zoom-in','zoom-out','fractional','reverse','cluster','selected','toggle'];
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function load(size){
+ const [width,height]=size.split('x').map(Number);live.style.width=width+'px';live.style.height=height+'px';
+ const script='<script src="tests/pin-motion.js?v=2"><'+'/script>';
+ live.srcdoc=original.replace('</body>',script+'</body>');
+ await new Promise(resolve=>live.onload=resolve);await wait(300);return {width,height};
+}
+async function run(size,scenario,capture){
+ const dimensions=await load(size);
+ const result=await live.contentWindow.runPinMotion(scenario,capture);
+ const line=`${result.errors.length?'FAIL':'PASS'} ${size} ${scenario}: ${result.frames} кадров; ${result.samples} измерений; ${result.errors.length} артефактов; DOM ${result.retained}/${result.comparable}`;
+ const row=document.createElement('div');row.className=result.errors.length?'fail':'pass';row.textContent=line;report.append(row);
+ if(capture){
+  document.querySelector('#frames').replaceChildren();
+  result.snapshots.forEach(snapshot=>{
+   const box=document.createElement('div');box.className='frame';
+   const title=document.createElement('h3');title.textContent=snapshot.time+' ms';
+   const frame=document.createElement('iframe');frame.title='Кадр '+snapshot.time+' ms';frame.style.width=dimensions.width+'px';frame.style.height=Math.min(614,dimensions.height)+'px';
+   frame.srcdoc=snapshot.html;box.append(title,frame);document.querySelector('#frames').append(box);
+  });
+ }
+ if(result.errors.length){const detail=document.createElement('div');detail.textContent=JSON.stringify(result.errors.slice(0,3));report.append(detail);}
+ return result;
+}
+document.querySelector('#run').onclick=async()=>{
+ status.textContent='Выполняется…';try{const result=await run(document.querySelector('#size').value,document.querySelector('#scenario').value,true);status.textContent=`Готово: ${result.errors.length} артефактов`;}catch(e){status.textContent=e.stack;}
+};
+document.querySelector('#matrix').onclick=async()=>{
+ report.replaceChildren();let failures=0,frames=0,samples=0,completed=0;
+ try{for(const size of sizes)for(const scenario of scenarios){status.textContent=`Сценарий ${++completed}/60: ${size} ${scenario}`;const result=await run(size,scenario,false);failures+=Number(result.errors.length>0);frames+=result.frames;samples+=result.samples;}
+ status.textContent=`Завершено: ${completed} сценариев; ${failures} с ошибками; ${frames} кадров; ${samples} измерений`;
+ }catch(e){status.textContent=e.stack;}
+};
+(async()=>{original=await(await fetch('../index.html?verification='+Date.now(),{cache:'no-store'})).text();const base=new URL('../',location.href).href;original=original.replace('<head>','<head><base href="'+base+'">');await load('375x812');status.textContent='Готово к проверке';})();
+</script></html>

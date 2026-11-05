@@ -7,9 +7,9 @@ window.reportTest=(name,passed,detail='')=>{
  const line=document.createElement('div');line.className=passed?'pass':'fail';line.textContent=(passed?'PASS: ':'FAIL: ')+name+(detail?' — '+detail:'');results.append(line);
 };
 (async()=>{
- const html=await (await fetch('../index.html')).text();
+ const html=await (await fetch('../index.html?verification='+Date.now(),{cache:'no-store'})).text();
  const base=new URL('../',location.href).href;
- const testScript='<script src="tests/new-pins.test.js"><'+'/script><script src="tests/prototype.test.js"><'+'/script>';
+ const testScript='<script src="tests/new-pins.test.js?v=20261105-stable"><'+'/script><script src="tests/prototype.test.js"><'+'/script>';
  document.querySelector('iframe').srcdoc=html.replace('<head>','<head><base href="'+base+'">').replace('</body>',testScript+'</body>');
 })();
 </script></html>

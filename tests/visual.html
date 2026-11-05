@@ -1,7 +1,7 @@
 <!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cashback visual fixtures</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden}iframe{border:0;width:100%;height:100%}</style><iframe title="Визуальная проверка прототипа"></iframe>
 <script>
 (async()=>{
- const html=await(await fetch('../index.html')).text();
+ const html=await(await fetch('../index.html?verification='+Date.now(),{cache:'no-store'})).text();
  const base=new URL('../',location.href).href;
  const params=new URLSearchParams(location.search);
  const scene=params.get('scene')||'new';

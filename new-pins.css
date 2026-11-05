@@ -1,0 +1,7 @@
+/* New tile pins are committed at their final size. Camera gestures must not
+   replay legacy dot-entry animations or animate an intermediate measured width. */
+.marker.new-tile-pin,
+.marker.new-tile-pin .pill {
+ animation: none !important;
+ transition: none !important;
+}

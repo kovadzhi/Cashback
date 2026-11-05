@@ -61,7 +61,42 @@ function repositionNewTileClusters(){
   el.style.left=pt.x+'px';el.style.top=pt.y+'px';
  });
 }
+function newTileNodeKey(el){
+ if(el.classList.contains('new-tile-pin'))return 'pin:'+el.dataset.pinId;
+ if(el.classList.contains('new-tile-cluster'))return 'tile:'+el.dataset.clusterKey;
+ return null;
+}
+function commitNewTilePins(layer,staging){
+ const previous=new Map([...layer.children].map(el=>[newTileNodeKey(el),el]).filter(([key])=>key));
+ const retained=new Set();
+ for(const next of [...staging.children]){
+  const current=previous.get(newTileNodeKey(next));
+  if(!current){layer.append(next);retained.add(next);continue;}
+  // Keep the marker and decoded logo in place. Apply only its final state;
+  // no visible expanded measurement or opacity/width animation is exposed.
+  current.className=next.className;current.style.cssText=next.style.cssText;
+  for(const [name,value] of Object.entries(next.dataset))current.dataset[name]=value;
+  current.title=next.title;current.onclick=next.onclick;
+  const image=current.querySelector('img'),nextImage=next.querySelector('img');
+  if(image&&nextImage&&image.getAttribute('src')!==nextImage.getAttribute('src')){
+   image.src=nextImage.src;image.alt=nextImage.alt;
+  }
+  for(const selector of ['.pill','.name','.cash','.cluster-count-text']){
+   const target=current.querySelector(selector),value=next.querySelector(selector);
+   if(!target||!value)continue;
+   target.style.cssText=value.style.cssText;
+   if(selector!=='.pill'&&target.textContent!==value.textContent)target.textContent=value.textContent;
+  }
+  retained.add(current);
+ }
+ for(const el of [...layer.children])if(el!==staging&&!retained.has(el))el.remove();
+ staging.remove();
+}
 function renderNewTilePins(layer,source){
+ const staging=document.createElement('div');
+ staging.className='new-pin-staging';
+ staging.style.cssText='position:absolute;inset:0;visibility:hidden;pointer-events:none';
+ staging.setAttribute('aria-hidden','true');layer.append(staging);
  const z=getQuadkeyZoom(map.getZoom()),plan=getNewTilePlan(source,z);
  const size=getActiveMapSize();
  const inViewport=p=>{
@@ -92,7 +127,7 @@ function renderNewTilePins(layer,source){
  }
  function marker(p){
   const pt=projectActive([p.lng,p.lat]),el=document.createElement('div');
-  el.className='marker';el.dataset.pinId=String(p.pinId);
+  el.className='marker new-tile-pin';el.dataset.pinId=String(p.pinId);
   el.style.left=pt.x+'px';el.style.top=pt.y+'px';
   const pill=document.createElement('div');pill.className='pill';
   const wrap=document.createElement('span');wrap.className='logo-wrap';
@@ -104,7 +139,7 @@ function renderNewTilePins(layer,source){
    const span=document.createElement('span');span.className=className;span.textContent=text;copy.append(span);
   }
   pill.append(copy);el.append(pill);el.title=`${p.name} · ${p.cashLabel||`Кэшбэк ${p.cash}%`} · Вес ${p.partnerWeight}`;
-  el.onclick=()=>selectPoint(p);layer.append(el);
+  el.onclick=()=>selectPoint(p);staging.append(el);
   return {p,el,pt};
  }
  function dot(entry){
@@ -123,7 +158,7 @@ function renderNewTilePins(layer,source){
   const text=document.createElement('span');text.className='cluster-count-text';text.textContent=tile.count>99?'99+':String(tile.count);
   count.append(text);el.append(count);el.title=`Кластер · ${tile.count} точек · тайл ${tile.key}`;
   el.onclick=()=>map.easeTo({center:[mean.lng,mean.lat],zoom:Math.min(MAX_MAP_ZOOM,map.getZoom()+1),duration:350});
-  layer.append(el);entries.push({type:'cluster',p:tile.items[0],el,tile,mean});
+  staging.append(el);entries.push({type:'cluster',p:tile.items[0],el,tile,mean});
  }
  // All pin sizes and clusters compete by weight; dots never reserve space.
  entries.sort((a,b)=>compareNewPinWeight(a.p,b.p));
@@ -163,6 +198,7 @@ function renderNewTilePins(layer,source){
   el.style.zIndex='1000';state==='expanded'?expanded++:compact++;
  }
  plan.dots.forEach(p=>dot(marker(p)));
+ commitNewTilePins(layer,staging);
  document.getElementById('shown').textContent=expanded+compact+dots;
  document.getElementById('compactCount').textContent=compact;
  document.getElementById('hiddenCount').textContent=clustered;

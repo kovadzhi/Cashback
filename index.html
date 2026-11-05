@@ -115,6 +115,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}.hint{font-size:11px;color
 
 </style>
 <link rel="stylesheet" href="sheets.css?v=20261105-kinetic">
+<link rel="stylesheet" href="new-pins.css?v=20261105-stable">
 </head>
 <body>
 <div class="app">
@@ -686,7 +687,7 @@ function repositionMapElements(){
  if(document.getElementById('newLogicToggle').checked)repositionNewTileClusters();
 }
 function render(){renderMapPins();if(typeof renderSelectedMarker==='function')renderSelectedMarker();if(typeof scheduleOfferRefresh==='function')scheduleOfferRefresh();}
-function renderMapPins(){const layer=document.getElementById('markers');layer.innerHTML='';updateMobileHud();if(mapReady&&document.getElementById('newLogicToggle').checked){renderNewTilePins(layer,getRenderPoints());renderTiles();return;}if(mapReady && (mode==='cluster'||mode==='hybrid')){const tileZoom=getQuadkeyZoom(map.getZoom());renderTileClusters(layer,getRenderPoints(),tileZoom);renderTiles();return;}if(mapReady){renderExpandedPins(layer);renderTiles();return;}let sorted=[...getRenderPoints()].sort((a,b)=>score(b)-score(a));let placed=[],hidden=0,compact=0,full=0;let minGap=zoom>=17?48:zoom>=15?58:72;
+function renderMapPins(){const layer=document.getElementById('markers');updateMobileHud();if(mapReady&&document.getElementById('newLogicToggle').checked){renderNewTilePins(layer,getRenderPoints());renderTiles();return;}layer.innerHTML='';if(mapReady && (mode==='cluster'||mode==='hybrid')){const tileZoom=getQuadkeyZoom(map.getZoom());renderTileClusters(layer,getRenderPoints(),tileZoom);renderTiles();return;}if(mapReady){renderExpandedPins(layer);renderTiles();return;}let sorted=[...getRenderPoints()].sort((a,b)=>score(b)-score(a));let placed=[],hidden=0,compact=0,full=0;let minGap=zoom>=17?48:zoom>=15?58:72;
 for(let p of sorted){let projected=mapReady?projectActive([p.lng,p.lat]):{x:p.x*layer.clientWidth,y:p.y*layer.clientHeight};let px=projected.x,py=projected.y;
  let selected=p.selected,near=placed.find(q=>Math.hypot(q.px-px,q.py-py)<minGap);
  let compactState=false,hide=false;
@@ -771,7 +772,7 @@ makePoints(1200);makeGoodsPoints();
 
 </script>
 <script src="partners.js"></script>
-<script src="new-pins.js"></script>
+<script src="new-pins.js?v=20261105-stable"></script>
 <script src="sheets.js?v=20261105-kinetic"></script>
 <script>initSheets();initMap();connectSheetsToMap();</script>
 </body></html>
