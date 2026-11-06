@@ -20,7 +20,7 @@ async function runNewPinStabilityTests(check,settle){
       const old=pins.get(el.dataset.pinId);
       identities&&=!!old&&(!old.el||old.el===el);
       if(old){old.el=el;monotonic&&=level[el.dataset.state]<=level[old.state];old.state=el.dataset.state;}
-      if(el.dataset.state==='expanded'&&!newPinInsideViewport(el.getBoundingClientRect(),viewport)){inside=false;if(details.length<2)details.push({kind:'outside',id:el.dataset.pinId,rect:el.getBoundingClientRect().toJSON()});}
+      if(el.dataset.state==='expanded'&&!map.isMoving()&&!newPinInsideViewport(el.getBoundingClientRect(),viewport)){inside=false;if(details.length<2)details.push({kind:'outside',id:el.dataset.pinId,rect:el.getBoundingClientRect().toJSON()});}
      }
      if(el.classList.contains('new-tile-cluster')){
       const old=clusters.get(el.dataset.clusterKey);
@@ -40,7 +40,7 @@ async function runNewPinStabilityTests(check,settle){
   check(`${name}: пины не раскрываются обратно в том же жесте`,monotonic);
   check(`${name}: географические якоря кластеров не скачут`,anchors&&members);
   check(`${name}: DOM пинов и кластеров сохранён`,identities);
-  check(`${name}: текст полностью внутри вьюпорта`,inside,inside?'':JSON.stringify(details));
+  check(`${name}: после движения текст полностью внутри вьюпорта`,inside,inside?'':JSON.stringify(details));
   check(`${name}: безопасные зоны не пересекаются`,!overlaps,overlaps?JSON.stringify(details):'');
   check(`${name}: нет неподвижных анимационных копий`,!ghosts);
   check(`${name}: шторка не меняется до итогового обновления`,listStable);

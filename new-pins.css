@@ -12,6 +12,8 @@
 .new-mini-avatar{display:block;position:relative;flex:0 0 24px;width:24px;height:24px;border-radius:50%;overflow:hidden;background:#fff}
 .new-mini-avatar+ .new-mini-avatar{margin-left:-6px;mask-image:url('assets/mini-cluster-mask.svg');mask-size:19.5557px 24px;mask-position:4.4443px 0;mask-repeat:no-repeat}
 .new-mini-avatar img{display:block;width:24px;height:24px;object-fit:contain;border-radius:50%}
-.new-pin-transition-ghost{pointer-events:none!important;z-index:1500!important;box-sizing:border-box;border-radius:52px;contain:layout style;animation:none!important;transition:none!important}
+.new-pin-transition-ghost{pointer-events:none!important;z-index:1500!important;box-sizing:border-box;border-radius:52px;contain:layout style;position:absolute;overflow:visible;animation:none!important;transition:none!important}
+.new-pin-transition-shell{pointer-events:none!important;animation:none!important;transition:none!important}
+.new-pin-transition-dot{position:absolute;display:block;width:16px;height:16px;border:2px solid white;border-radius:50%;box-sizing:border-box;pointer-events:none;box-shadow:none}
 .new-pin-transition-ghost .pill{transition:none!important;animation:none!important;max-width:none!important}
 @media(prefers-reduced-motion:reduce){.new-pin-transition-ghost{display:none}}

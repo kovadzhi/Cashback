@@ -17,7 +17,7 @@ async function run(slow){if(!ready)return;const w=frame.contentWindow;const code
  let before,after;
  if(which==='logo'||which==='text'){before=[high,p];after=[{...high,...unprojectActive([x,80])},p];}
  if(which==='appear'){before=[];after=[p];}
- if(which==='collapse'){before=[p];after=[high,p];}
+ if(which==='collapse'){before=[p];after=[p];}
  if(which.startsWith('mini')||which==='split'){
   const n=which==='split'?4:Number(which.slice(4));
   const separate=Array.from({length:n},(_,i)=>make(40+i,width-55,70+i*100,100-i));
@@ -25,6 +25,7 @@ async function run(slow){if(!ready)return;const w=frame.contentWindow;const code
   before=[...leaders,...(which==='split'?together:separate)];after=[...leaders,...(which==='split'?separate:together)];
  }
  renderNewTilePins(layer,before);await wait(380);renderNewTilePins(layer,after);
+ if(which==='collapse'){const record=newPinMotion.scene.byKey.get('pin:'+p.pinId),old={...record,clone:record.el.cloneNode(true)};applyNewPinRecordState(record,'dot');updateNewPinFrame(false);animateNewPinDowngrade(old,record,newPinMotion.scene);}
  const ghosts=[...document.querySelectorAll('.new-pin-transition-ghost')];
  ${slow?"ghosts.flatMap(el=>el.getAnimations({subtree:true})).forEach(a=>{a.pause();a.currentTime=0;});":""}
  parent.document.querySelector('#status').textContent=JSON.stringify({transition:which,ghosts:ghosts.length,text:layer.querySelectorAll('[data-state="expanded"]').length,mini:layer.querySelectorAll('.new-mini-cluster').length});

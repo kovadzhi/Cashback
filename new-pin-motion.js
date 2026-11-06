@@ -15,12 +15,13 @@ function beginNewPinMotion(){
  clearTimeout(newPinMotion.timer);newPinMotion.timer=0;
  if(!newPinMotion.active)newPinMotion.preferredText=new Set([...document.querySelectorAll('.new-tile-pin[data-state="expanded"]')].map(el=>el.dataset.pinId));
  newPinMotion.active=true;
- // A copy in screen coordinates must never remain behind a moving map.
- clearNewPinGhosts();
+ // Existing tweens continue at their current time and follow the camera.
+ positionNewPinTransitions();
 }
 function settleNewPinMotion(){
  if(!newPinModeEnabled()){resetNewPinMotion();return;}
  clearTimeout(newPinMotion.timer);newPinMotion.active=true;
+ if(newPinMotion.scene&&!map.isMoving())updateNewPinFrame(true,true);
  newPinMotion.timer=setTimeout(()=>{
   newPinMotion.timer=0;
   if(!newPinModeEnabled()){resetNewPinMotion();return;}

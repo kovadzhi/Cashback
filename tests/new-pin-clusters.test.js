@@ -41,6 +41,8 @@ async function runNewPinClusterTests(check,settle){
  renderNewTilePins(layer,[high,low]);
  check('Анимация: сворачивание использует обратный переход',newPinTransitions.size>0&&layer.querySelector(`[data-pin-id="${low.pinId}"]`)?.dataset.state==='dot');
  beginNewPinMotion();
- check('Анимация: новый жест сразу удаляет неподвижные копии',newPinTransitions.size===0&&!document.querySelector('.new-pin-animation-layer'));
+ check('Анимация: новый жест сохраняет текущий кадр',newPinTransitions.size>0&&!!document.querySelector('.new-pin-animation-layer'));
+ await wait(350);
+ check('Анимация: прерванный жест не оставляет копий',newPinTransitions.size===0);
  newPinMotion.active=false;render();await settle();
 }

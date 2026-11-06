@@ -74,7 +74,7 @@ function applyNewPinRecordState(record,state){
   pill.style.backgroundColor=newPartnerDotColors.get(record.p.name)||record.p.color;el.style.zIndex='4';
  }else{pill.style.backgroundColor='';if(!pill.querySelector('img'))pill.replaceChildren(...createNewPinElement(record.p,'compact').querySelector('.pill').childNodes);el.classList.add('compact','new-logic-compact');pill.style.width='28px';}
 }
-function updateNewPinFrame(constrain=newPinMotion.active||map.isMoving()){
+function updateNewPinFrame(constrain=newPinMotion.active||map.isMoving(),settleEdges=false){
  const scene=newPinMotion.scene;if(!scene)return;
  const {layer,records,sourceById}=scene,width=layer.clientWidth,height=layer.clientHeight;
  const viewport={left:0,top:0,right:width,bottom:height},occupied=[];
@@ -92,9 +92,7 @@ function updateNewPinFrame(constrain=newPinMotion.active||map.isMoving()){
   const downgrade=state=>{if(!before&&record.el?.isConnected)before={...record,clone:record.el.cloneNode(true)};applyNewPinRecordState(record,state);};
   record.pt=projectActive([record.lng,record.lat]);
   let rect=newPinRecordRect(record);
-  if(constrain&&record.state==='expanded'&&!newPinInsideViewport(rect,viewport)){
-   downgrade('compact');rect=newPinRecordRect(record);
-  }
+  if(settleEdges&&record.state==='expanded'&&!newPinInsideViewport(rect,viewport)){downgrade('compact');rect=newPinRecordRect(record);}
   if(!newPinRectVisible(rect,width,height)||record.hidden){record.el?.remove();continue;}
   if(constrain&&record.state!=='dot'){
    const collides=()=>occupied.some(other=>newPinRectsOverlap(other,newPinSafeRect(rect)));

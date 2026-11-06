@@ -25,7 +25,17 @@ function createNewMiniCluster(members){
 }
 function buildNewMiniClusters(staging,source,occupied,virtual){
  const byId=new Map(source.map(p=>[String(p.pinId),p]));
- const candidates=[...staging.querySelectorAll('.new-tile-pin:not([data-state="expanded"])')].map(el=>{
+ const viewport={left:0,top:0,right:staging.clientWidth,bottom:staging.clientHeight};
+ const visibleStates=new Map();
+ for(const el of staging.querySelectorAll('.new-tile-pin')){
+  const state=el.dataset.state;if(state==='dot')continue;
+  const p=byId.get(el.dataset.pinId),pt=projectActive([p.lng,p.lat]),w=state==='compact'?28:parseFloat(el.querySelector('.pill').style.width),h=state==='compact'?28:40;
+  if(!newPinRectVisible({left:pt.x-18,right:pt.x-18+w,top:pt.y-h/2,bottom:pt.y+h/2},viewport.right,viewport.bottom))continue;
+  if(!visibleStates.has(p.name))visibleStates.set(p.name,new Set());
+  visibleStates.get(p.name).add(el.dataset.state);
+ }
+ const represented=name=>visibleStates.get(name)?.has('expanded')&&visibleStates.get(name)?.has('compact');
+ const candidates=[...staging.querySelectorAll('.new-tile-pin:not([data-state="expanded"])')].filter(el=>!represented(byId.get(el.dataset.pinId).name)).map(el=>{
   const p=byId.get(el.dataset.pinId);return {p,el,pt:projectActive([p.lng,p.lat])};
  }).sort((a,b)=>compareNewPinWeight(a.p,b.p));
  const used=new Set();let grouped=0,compact=0,dots=0;

@@ -5,7 +5,7 @@ window.runPinMotion=async function(scenario,capture){
  map.stop();document.getElementById('newLogicToggle').checked=true;
  map.jumpTo({center:USER_LOCATION,zoom:11});render();await wait(300);
  if(scenario==='selected'){selectPoint(visiblePartnerOffers()[0]);await wait(650);}
- const frozenRevision=newPinMotion.revision;
+ let frozenRevision=newPinMotion.revision;
  const motionStates=new Map([...layer.querySelectorAll('.new-tile-pin')].map(el=>[el.dataset.pinId,el.dataset.state]));
  const clusterAnchors=new Map([...layer.querySelectorAll('.new-tile-cluster')].map(el=>[el.dataset.clusterKey,[el.dataset.lng,el.dataset.lat,el.dataset.memberIds].join('|')]));
  const levels={dot:0,compact:1,expanded:2};
@@ -28,6 +28,11 @@ window.runPinMotion=async function(scenario,capture){
  }
  function sample(now){
   frames++;
+  if(!newPinMotion.active){
+   frozenRevision=newPinMotion.revision;motionStates.clear();clusterAnchors.clear();
+   for(const el of layer.querySelectorAll('.new-tile-pin'))motionStates.set(el.dataset.pinId,el.dataset.state);
+   for(const el of layer.querySelectorAll('.new-tile-cluster'))clusterAnchors.set(el.dataset.clusterKey,[el.dataset.lng,el.dataset.lat,el.dataset.memberIds].join('|'));
+  }
   if(newPinMotion.active){
    if(newPinMotion.revision!==frozenRevision)movingLayouts++;
    for(const el of layer.querySelectorAll('.new-tile-pin')){const old=motionStates.get(el.dataset.pinId);if(old&&levels[el.dataset.state]>levels[old])promotions++;motionStates.set(el.dataset.pinId,el.dataset.state);}
@@ -38,7 +43,7 @@ window.runPinMotion=async function(scenario,capture){
   for(const el of layer.querySelectorAll('.marker:not(.selected)')){
    const pill=el.querySelector('.pill'),rect=pill.getBoundingClientRect(),style=getComputedStyle(el),pillStyle=getComputedStyle(pill);
    const state=el.dataset.state;
-   const clipped=state==='expanded'&&!newPinInsideViewport(el.getBoundingClientRect(),layer.getBoundingClientRect());
+   const clipped=!map.isMoving()&&state==='expanded'&&!newPinInsideViewport(el.getBoundingClientRect(),layer.getBoundingClientRect());
    const target=state==='dot'?16:state==='compact'?28:parseFloat(pill.style.width);
    samples++;
    if((clipped||Math.abs(rect.width-target)>.6||Number(style.opacity)<.999||pillStyle.transitionDuration.split(',').some(s=>parseFloat(s)>0)||style.animationName!=='none')&&errors.length<100){
@@ -48,6 +53,11 @@ window.runPinMotion=async function(scenario,capture){
   if(capture&&snapshotIndex<targets.length&&now-started>=targets[snapshotIndex])snapshots.push(snapshot(targets[snapshotIndex++]));
   if(running)requestAnimationFrame(sample);
  }
+ if(scenario==='fast-pan')for(let i=0;i<6;i++)setTimeout(()=>map.panBy([i%2?-130:160,i%2?60:-40],{duration:90}),i*65);
+ if(scenario==='fast-zoom')for(let i=0;i<6;i++)setTimeout(()=>map.zoomTo([12.4,10.7,13,11.3,12.6,11.5][i],{duration:100}),i*70);
+ if(scenario==='interrupt-reveal'){map.zoomTo(12,{duration:80});setTimeout(()=>map.panBy([85,-45],{duration:90}),330);setTimeout(()=>map.zoomTo(11.5,{duration:100}),480);}
+ if(scenario==='rapid-reverse')for(let i=0;i<5;i++)setTimeout(()=>map.easeTo({zoom:i%2?10.8:12.2,center:i%2?USER_LOCATION:[37.59,55.78],duration:130}),i*85);
+ if(scenario==='edge-return'){map.panBy([-180,0],{duration:150});setTimeout(()=>map.panBy([180,0],{duration:150}),180);}
  if(scenario==='redraw')render();
  if(scenario==='pan')map.panBy([120,70],{duration:380});
  if(scenario==='pan-back')map.panBy([-160,-90],{duration:380});
@@ -58,7 +68,7 @@ window.runPinMotion=async function(scenario,capture){
  if(scenario==='cluster')layer.querySelector('.new-tile-cluster')?.click();
  if(scenario==='selected')map.panBy([90,35],{duration:380});
  if(scenario==='toggle'){document.getElementById('newLogicToggle').checked=false;render();document.getElementById('newLogicToggle').checked=true;render();}
- requestAnimationFrame(sample);await wait(1000);running=false;await wait(30);
+ requestAnimationFrame(sample);await wait(['fast-pan','fast-zoom','interrupt-reveal','rapid-reverse','edge-return'].includes(scenario)?1550:1000);running=false;await wait(30);
  let comparable=0,retained=0;
  for(const el of layer.querySelectorAll('.marker:not(.selected)'))if(before.has(el.dataset.pinId)){comparable++;if(before.get(el.dataset.pinId)===el)retained++;}
  if(document.querySelector('.new-pin-transition-ghost'))errors.push({kind:'unfinished transition'});
