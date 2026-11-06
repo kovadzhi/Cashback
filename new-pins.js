@@ -50,48 +50,21 @@ function commitNewTilePins(layer,staging){
  for(const next of [...staging.children]){
   const current=previous.get(newTileNodeKey(next));
   if(!current){layer.append(next);retained.add(next);continue;}
-  // Keep the marker and decoded logo in place. Apply only its final state;
-  // no visible expanded measurement or opacity/width animation is exposed.
-  const shrinking=current.isConnected&&!newPinMotion.active&&!map.isMoving()&&current.dataset.state!=='dot'&&next.dataset.state==='dot';
-  const ghostSource=shrinking?current.cloneNode(true):null;
-  const previousWidth=shrinking?current.getBoundingClientRect().width:0;
-  const previousHeight=shrinking?current.getBoundingClientRect().height:0;
   if(current.className!==next.className)current.className=next.className;
   if(current.style.cssText!==next.style.cssText)current.style.cssText=next.style.cssText;
   for(const name of Object.keys(current.dataset))if(!(name in next.dataset))delete current.dataset[name];
   for(const [name,value] of Object.entries(next.dataset))current.dataset[name]=value;
-  current.title=next.title;current.onclick=next.onclick;
+  current.title=next.title;current.onclick=next.onclick;current.onkeydown=next.onkeydown;
+  for(const name of ['role','tabindex','aria-label']){if(next.hasAttribute(name))current.setAttribute(name,next.getAttribute(name));else current.removeAttribute(name);}
   const currentPill=current.querySelector('.pill'),nextPill=next.querySelector('.pill');
   if(currentPill&&nextPill&&!!currentPill.querySelector('img')!==!!nextPill.querySelector('img'))currentPill.replaceChildren(...nextPill.childNodes);
   const image=current.querySelector('img'),nextImage=next.querySelector('img');
-  if(image&&nextImage&&image.getAttribute('src')!==nextImage.getAttribute('src')){
-   image.src=nextImage.src;image.alt=nextImage.alt;
-  }
+  if(image&&nextImage&&image.getAttribute('src')!==nextImage.getAttribute('src')){image.src=nextImage.src;image.alt=nextImage.alt;}
   for(const selector of ['.pill','.name','.cash','.cluster-count-text']){
    const target=current.querySelector(selector),value=next.querySelector(selector);
    if(!target||!value)continue;
    target.style.cssText=value.style.cssText;
    if(selector!=='.pill'&&target.textContent!==value.textContent)target.textContent=value.textContent;
-  }
-  if(shrinking&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-   // Animate an inert visual copy; the live hit target and collision plan
-   // immediately use the final dot geometry. Retained nodes never flash.
-   const ghost=ghostSource;
-   ghost.className='marker new-pin-collapse-ghost'+(ghostSource.classList.contains('compact')?' compact':'');
-   ghost.removeAttribute('data-pin-id');ghost.removeAttribute('data-state');
-   ghost.style.width=previousWidth+'px';ghost.style.height=previousHeight+'px';
-   ghost.style.pointerEvents='none';ghost.setAttribute('aria-hidden','true');
-   const pill=ghost.querySelector('.pill');
-   pill.style.width=previousWidth+'px';pill.style.height=previousHeight+'px';
-
-   layer.parentElement.append(ghost);
-   const animation=ghost.animate([
-    {width:previousWidth+'px',height:previousHeight+'px',borderRadius:'52px',transform:'translate(-18px,-50%)',opacity:1},
-    {width:'16px',height:'16px',borderRadius:'50%',transform:'translate(-8px,-50%)',opacity:0}
-   ],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'});
-   pill.animate([{width:previousWidth+'px',height:previousHeight+'px'},{width:'16px',height:'16px',backgroundColor:next.querySelector('.pill').style.backgroundColor}],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'});
-   ghost.querySelectorAll('.logo-wrap,.pin-copy').forEach(child=>child.animate([{opacity:1},{opacity:0,transform:'scale(.4)'}],{duration:200,fill:'forwards'}));
-   animation.finished.catch(()=>{}).finally(()=>ghost.remove());
   }
   if(current.parentElement!==layer)layer.append(current);
   retained.add(current);
@@ -107,6 +80,7 @@ function renderNewTilePins(layer,source){
   layer.querySelectorAll('.marker.selected').forEach(el=>{if(el.dataset.pinId!==String(selectedId))el.remove();});
   constrainNewPinsDuringMotion();return;
  }
+ const transitionBefore=captureNewPinTransitions(layer);
  const previousExpanded=new Set([...layer.querySelectorAll('.new-tile-pin[data-state="expanded"]')].map(el=>el.dataset.pinId));
  const preferredText=new Set([...previousExpanded,...newPinMotion.preferredText]);
  const compareStable=(a,b)=>(Number(b.partnerWeight)||0)-(Number(a.partnerWeight)||0)||
@@ -195,19 +169,14 @@ function renderNewTilePins(layer,source){
  function placeCluster(entry,members){
   const {tile,el}=entry;
   const mean=members.reduce((sum,p)=>({lng:sum.lng+p.lng/members.length,lat:sum.lat+p.lat/members.length}),{lng:0,lat:0});
-  const nw=projectActive(tileToLngLat(tile.x,tile.y,z)),se=projectActive(tileToLngLat(tile.x+1,tile.y+1,z));
-  const free=pt=>!occupied.some(rect=>newPinRectsOverlap(rect,newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18})));
-  let pt=projectActive([mean.lng,mean.lat]);
-  if(!free(pt)){
-   pt=null;
-   for(const member of members){const candidate=project(member);if(free(candidate)){pt=candidate;break;}}
-   if(!pt){const left=Math.max(nw.x+26,26),top=Math.max(nw.y+26,26),right=Math.min(se.x-26,size.clientWidth-26),bottom=Math.min(se.y-26,size.clientHeight-26);if(left<=right&&top<=bottom)for(const candidate of [{x:left,y:top},{x:right,y:top},{x:left,y:bottom},{x:right,y:bottom}])if(free(candidate)){pt=candidate;break;}}
-   if(!pt)search:for(const visibleOnly of [true,false])for(let y=nw.y+26;y<=se.y-26;y+=26)for(let x=nw.x+26;x<=se.x-26;x+=26){if((!visibleOnly||(x>=18&&x<=size.clientWidth-18&&y>=18&&y<=size.clientHeight-18))&&free({x,y})){pt={x,y};break search;}}
-  }
-  if(!pt)return false;
-  const lngLat=unprojectActive([pt.x,pt.y]);el.dataset.lng=lngLat.lng;el.dataset.lat=lngLat.lat;
+  const pt=projectActive([mean.lng,mean.lat]);
+  el.dataset.lng=mean.lng;el.dataset.lat=mean.lat;
   el.style.left=pt.x+'px';el.style.top=pt.y+'px';el.style.zIndex='500';
-  occupied.push({...newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18}),owner:entry});
+  el.onclick=()=>map.easeTo({center:[mean.lng,mean.lat],zoom:Math.min(MAX_MAP_ZOOM,map.getZoom()+1),duration:350});
+  const safe=newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18});
+  const blocked=occupied.some(rect=>newPinRectsOverlap(rect,safe));
+  el.dataset.layoutHidden=String(blocked);el.style.visibility=blocked?'hidden':'';
+  if(!blocked)occupied.push({...safe,owner:entry});
   return true;
  }
  // All pin sizes and clusters compete by weight; dots never reserve space.
@@ -280,9 +249,12 @@ function renderNewTilePins(layer,source){
   }
  }
  plan.dots.filter(p=>!promoted.has(p.pinId)).forEach(appendDot);
+ const minis=buildNewMiniClusters(staging,source,occupied,virtual);
+ clustered+=minis.grouped;compact-=minis.compact;dots-=minis.dots;
  staging.querySelectorAll('.new-tile-pin').forEach(el=>{el.style.width=el.querySelector('.pill').style.width;});
  commitNewTilePins(layer,staging);
  registerNewPinScene(layer,source,virtual);
+ animateNewPinTransitions(transitionBefore,newPinMotion.scene);
  newPinMotion.hasLayout=true;newPinMotion.revision++;
  if(typeof refreshOfferList==='function')refreshOfferList();
  document.getElementById('shown').textContent=expanded+compact+dots;

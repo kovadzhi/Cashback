@@ -32,6 +32,7 @@ window.runPinMotion=async function(scenario,capture){
    if(newPinMotion.revision!==frozenRevision)movingLayouts++;
    for(const el of layer.querySelectorAll('.new-tile-pin')){const old=motionStates.get(el.dataset.pinId);if(old&&levels[el.dataset.state]>levels[old])promotions++;motionStates.set(el.dataset.pinId,el.dataset.state);}
    for(const el of layer.querySelectorAll('.new-tile-cluster')){const old=clusterAnchors.get(el.dataset.clusterKey);if(old&&old!==[el.dataset.lng,el.dataset.lat,el.dataset.memberIds].join('|'))clusterMoves++;}
+   for(const ghost of document.querySelectorAll('.new-pin-transition-ghost')){const pt=projectActive([Number(ghost.dataset.anchorLng),Number(ghost.dataset.anchorLat)]);if((Math.abs(parseFloat(ghost.style.left)-pt.x)>.1||Math.abs(parseFloat(ghost.style.top)-pt.y)>.1)&&errors.length<100)errors.push({frame:frames,kind:'transition anchor drift'});}
    if(document.querySelector('.new-pin-collapse-ghost')&&errors.length<100)errors.push({frame:frames,kind:'moving ghost'});
   }
   for(const el of layer.querySelectorAll('.marker:not(.selected)')){
@@ -57,9 +58,10 @@ window.runPinMotion=async function(scenario,capture){
  if(scenario==='cluster')layer.querySelector('.new-tile-cluster')?.click();
  if(scenario==='selected')map.panBy([90,35],{duration:380});
  if(scenario==='toggle'){document.getElementById('newLogicToggle').checked=false;render();document.getElementById('newLogicToggle').checked=true;render();}
- requestAnimationFrame(sample);await wait(850);running=false;await wait(30);
+ requestAnimationFrame(sample);await wait(1000);running=false;await wait(30);
  let comparable=0,retained=0;
  for(const el of layer.querySelectorAll('.marker:not(.selected)'))if(before.has(el.dataset.pinId)){comparable++;if(before.get(el.dataset.pinId)===el)retained++;}
+ if(document.querySelector('.new-pin-transition-ghost'))errors.push({kind:'unfinished transition'});
  if(promotions||clusterMoves||movingLayouts)errors.push({kind:'unstable layout',promotions,clusterMoves,movingLayouts});
  return {scenario,promotions,clusterMoves,movingLayouts,frames,samples,errors,snapshots,comparable,retained};
 };

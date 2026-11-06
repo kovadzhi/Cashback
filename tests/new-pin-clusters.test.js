@@ -1,0 +1,46 @@
+async function runNewPinClusterTests(check,settle){
+ const wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const layer=document.getElementById('markers');map.stop();map.jumpTo({center:USER_LOCATION,zoom:13});await settle();
+ document.getElementById('newLogicToggle').checked=true;
+ const make=(id,x,y,weight)=>{const brand=brands[id%brands.length];return {...points[0],id:980000+id,pinId:980000+id,name:brand[0],logo:brand[5],partnerWeight:weight,selected:false,...unprojectActive([x,y])};};
+ const leaders=Array.from({length:6},(_,i)=>make(i,60,60+i*90,500-i));
+ const near=Array.from({length:4},(_,i)=>make(30+i,300,255+i*7,100-i));
+ renderNewTilePins(layer,[...leaders,...near]);await wait(350);
+ const mini=layer.querySelector('.new-mini-cluster'),record=newPinMotion.scene.records.find(r=>r.el===mini);
+ check('Мини-кластер: близкие пины объединены',!!mini);
+ check('Мини-кластер: четыре разных логотипа',mini?.querySelectorAll('img').length===4&&new Set([...mini?.querySelectorAll('img')||[]].map(i=>i.alt)).size===4);
+ check('Мини-кластер: геометрия Figma 82×28 и логотипы 24×24',mini&&Math.abs(mini.getBoundingClientRect().width-82)<.01&&Math.abs(mini.getBoundingClientRect().height-28)<.01&&[...mini.querySelectorAll('img')].every(i=>Math.abs(i.getBoundingClientRect().width-24)<.01&&Math.abs(i.getBoundingClientRect().height-24)<.01));
+ const mean=newClusterMean(near);
+ check('Мини-кластер: центр по всем участникам',record&&Math.abs(record.lng-mean.lng)<1e-10&&Math.abs(record.lat-mean.lat)<1e-10);
+ check('Мини-кластер: участники не дублируются',near.every(p=>!layer.querySelector(`[data-pin-id="${p.pinId}"]`))&&newPinMotion.scene.representedIds.size===leaders.length+near.length);
+ const boxes=[...layer.querySelectorAll('.new-tile-pin:not(.partner-dot),.new-tile-cluster')].map(el=>newPinSafeRect(el.getBoundingClientRect()));
+ check('Мини-кластер: не более четырёх партнёров в каждой капсуле',[...layer.querySelectorAll('.new-mini-cluster')].every(el=>Number(el.dataset.partnerCount)<=4));
+ check('Мини-кластер: зазоры 8 px до всех пинов',boxes.every((a,i)=>boxes.slice(i+1).every(b=>!newPinRectsOverlap(a,b))));
+ renderNewTilePins(layer,[...leaders,...near].reverse());await wait(350);
+ check('Мини-кластер: перестановка данных сохраняет DOM и состав',layer.querySelector('.new-mini-cluster')===mini&&record.members.join(',')===mini?.dataset.memberIds);
+ const fifth=make(34,300,278,80);
+ renderNewTilePins(layer,[...leaders,...near,fifth]);await wait(350);
+ check('Мини-кластер: пятый партнёр не попадает в капсулу',layer.querySelector('.new-mini-cluster')?.dataset.partnerCount==='4'&&newPinMotion.scene.representedIds.size===leaders.length+5&&!!layer.querySelector(`[data-pin-id="${fifth.pinId}"]`));
+ renderNewTilePins(layer,[...leaders,...near]);await wait(350);
+ const oldAnchor=mini?.dataset.lng+','+mini?.dataset.lat;
+ map.panBy([25,0],{duration:200});await wait(80);
+ check('Мини-кластер: в движении центр и состав зафиксированы',mini?.dataset.lng+','+mini?.dataset.lat===oldAnchor&&newPinMotion.active);
+ await settle();
+ const zoomBefore=map.getZoom();layer.querySelector('.new-mini-cluster')?.click();await settle();
+ check('Мини-кластер: нажатие приближает карту',map.getZoom()>zoomBefore+.9);
+ // Test the complete tween pipeline on the same stable geographic anchor.
+ map.jumpTo({center:USER_LOCATION,zoom:13});await settle();
+ const low=make(60,70,180,100),high=make(61,70,180,300);
+ renderNewTilePins(layer,[high,low]);await wait(350);
+ const moved={...low,...unprojectActive([70,310])};
+ renderNewTilePins(layer,[high,moved]);
+ const expansion=[...newPinTransitions];
+ check('Анимация: точка раскрывается с увеличением и логотипом',expansion.length>0&&!!document.querySelector('.new-pin-transition-ghost .logo-wrap')&&layer.querySelector(`[data-pin-id="${low.pinId}"]`)?.dataset.state==='expanded');
+ await wait(350);
+ check('Анимация: завершение удаляет копии и возвращает пин',newPinTransitions.size===0&&!document.querySelector('.new-pin-transition-ghost')&&layer.querySelector(`[data-pin-id="${low.pinId}"]`)?.style.visibility==='');
+ renderNewTilePins(layer,[high,low]);
+ check('Анимация: сворачивание использует обратный переход',newPinTransitions.size>0&&layer.querySelector(`[data-pin-id="${low.pinId}"]`)?.dataset.state==='dot');
+ beginNewPinMotion();
+ check('Анимация: новый жест сразу удаляет неподвижные копии',newPinTransitions.size===0&&!document.querySelector('.new-pin-animation-layer'));
+ newPinMotion.active=false;render();await settle();
+}

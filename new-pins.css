@@ -1,11 +1,17 @@
-/* New tile pins are committed at their final size. Camera gestures must not
-   replay legacy dot-entry animations or animate an intermediate measured width. */
+/* Live geometry is committed at its final size. WAAPI visual copies handle
+   transitions; legacy CSS entry/width animations must never replay here. */
 .marker.new-tile-pin,
 .marker.new-tile-pin .pill {
  animation: none !important;
  transition: none !important;
 }
 
-.new-pin-collapse-ghost{overflow:hidden;pointer-events:none!important;z-index:5}
-.new-pin-collapse-ghost .pill{overflow:hidden;min-width:0!important}
-@media(prefers-reduced-motion:reduce){.new-pin-collapse-ghost{display:none}}
+
+/* Figma 28:4987: 28 px capsule, 24 px avatars, 18 px stride. */
+.new-mini-cluster{height:28px;padding:2px;gap:0;justify-content:flex-start;transform:translate(-50%,-50%);overflow:visible}
+.new-mini-avatar{display:block;position:relative;flex:0 0 24px;width:24px;height:24px;border-radius:50%;overflow:hidden;background:#fff}
+.new-mini-avatar+ .new-mini-avatar{margin-left:-6px;mask-image:url('assets/mini-cluster-mask.svg');mask-size:19.5557px 24px;mask-position:4.4443px 0;mask-repeat:no-repeat}
+.new-mini-avatar img{display:block;width:24px;height:24px;object-fit:contain;border-radius:50%}
+.new-pin-transition-ghost{pointer-events:none!important;z-index:1500!important;box-sizing:border-box;border-radius:52px;contain:layout style;animation:none!important;transition:none!important}
+.new-pin-transition-ghost .pill{transition:none!important;animation:none!important;max-width:none!important}
+@media(prefers-reduced-motion:reduce){.new-pin-transition-ghost{display:none}}

@@ -216,6 +216,7 @@
   check('Все статические изображения загружены',images.every(img=>img.complete&&img.naturalWidth>0));
   check('Нет горизонтального переполнения',document.documentElement.scrollWidth===375);
   await runNewPinTests(check,settle);
+  await runNewPinClusterTests(check,settle);
   await runNewPinStabilityTests(check,settle);
   parent.reportTest('Проверки завершены',true);
  }catch(error){parent.reportTest('Исключение в тестах',false,error.stack);}

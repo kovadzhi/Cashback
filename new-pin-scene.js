@@ -39,7 +39,8 @@ function registerNewPinScene(layer,source,virtual){
  for(const el of layer.querySelectorAll('.new-tile-pin,.new-tile-cluster')){
   if(el.classList.contains('new-tile-cluster')){
    const members=el.dataset.memberIds.split(','),p=members.map(id=>sourceById.get(id)).filter(Boolean).reduce((best,p)=>!best||compareNewPinWeight(p,best)<0?p:best,null);
-   records.push({key:'tile:'+el.dataset.clusterKey,kind:'cluster',el,p,members,lng:Number(el.dataset.lng),lat:Number(el.dataset.lat),state:'cluster',width:36,height:36,hidden:false});
+   const mini=el.classList.contains('new-mini-cluster');
+   records.push({key:'tile:'+el.dataset.clusterKey,kind:'cluster',el,p,members,lng:Number(el.dataset.lng),lat:Number(el.dataset.lat),state:'cluster',width:mini?parseFloat(el.style.width):36,height:mini?28:36,hidden:el.dataset.layoutHidden==='true'});
   }else{
    const p=sourceById.get(el.dataset.pinId),state=el.dataset.state,measured=el.getBoundingClientRect();
    records.push({key:'pin:'+el.dataset.pinId,kind:'pin',el,p,lng:p.lng,lat:p.lat,state,width:measured.width,height:measured.height});
@@ -57,7 +58,7 @@ function registerNewPinScene(layer,source,virtual){
 }
 function newPinRecordRect(record){
  const {pt,state,width,height}=record;
- const left=pt.x-(state==='dot'?8:18),top=pt.y-height/2;
+ const left=pt.x-(record.kind==='cluster'?width/2:state==='dot'?8:18),top=pt.y-height/2;
  return {left,top,right:left+width,bottom:top+height};
 }
 function newPinRectVisible(rect,width,height){return rect.right>1&&rect.left<width-1&&rect.bottom>1&&rect.top<height-1;}
@@ -87,18 +88,20 @@ function updateNewPinFrame(constrain=newPinMotion.active||map.isMoving()){
  }
  for(const record of records){
   if(record.kind==='pin'&&record.p.selected){record.el?.remove();continue;}
+  let before=null;
+  const downgrade=state=>{if(!before&&record.el?.isConnected)before={...record,clone:record.el.cloneNode(true)};applyNewPinRecordState(record,state);};
   record.pt=projectActive([record.lng,record.lat]);
   let rect=newPinRecordRect(record);
   if(constrain&&record.state==='expanded'&&!newPinInsideViewport(rect,viewport)){
-   applyNewPinRecordState(record,'compact');rect=newPinRecordRect(record);
+   downgrade('compact');rect=newPinRecordRect(record);
   }
   if(!newPinRectVisible(rect,width,height)||record.hidden){record.el?.remove();continue;}
   if(constrain&&record.state!=='dot'){
    const collides=()=>occupied.some(other=>newPinRectsOverlap(other,newPinSafeRect(rect)));
    if(record.kind==='cluster'&&collides()){record.hidden=true;record.el?.remove();continue;}
    if(record.kind==='pin'&&collides()){
-    if(record.state==='expanded'){applyNewPinRecordState(record,'compact');rect=newPinRecordRect(record);}
-    if(collides()){applyNewPinRecordState(record,'dot');rect=newPinRecordRect(record);}
+    if(record.state==='expanded'){downgrade('compact');rect=newPinRecordRect(record);}
+    if(collides()){downgrade('dot');rect=newPinRecordRect(record);}
    }
   }
   // Downgrading changes both size and anchor offset; cull the final shape.
@@ -112,5 +115,7 @@ function updateNewPinFrame(constrain=newPinMotion.active||map.isMoving()){
   const left=record.pt.x+'px',top=record.pt.y+'px';
   if(el.style.left!==left)el.style.left=left;if(el.style.top!==top)el.style.top=top;
   if(el.parentElement!==layer)layer.append(el);
+  if(before)animateNewPinDowngrade(before,record,scene);
  }
+ positionNewPinTransitions();
 }

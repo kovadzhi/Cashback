@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><title>Переходы пинов и мини-кластеров</title>
+<style>body{font:14px system-ui;margin:12px;background:#eee}button,select{font:inherit;padding:6px;margin:3px}iframe{display:block;border:0}pre{white-space:pre-wrap}</style>
+<label>Экран <select id="width"><option>375</option><option>320</option><option>390</option></select></label>
+<label>Переход <select id="case"><option value="logo">Точка → логотип</option><option value="text">Точка → логотип и текст</option><option value="appear">Появление пина</option><option value="collapse">Сворачивание в точку</option><option value="mini2">Объединение 2 партнёров</option><option value="mini3">Объединение 3 партнёров</option><option value="mini4">Объединение 4 партнёров</option><option value="split">Разделение мини-кластера</option></select></label>
+<button id="run">Воспроизвести</button><button id="slow">Медленно</button>
+<button data-time="0">0 ms</button><button data-time="80">80 ms</button><button data-time="160">160 ms</button><button data-time="300">300 ms</button><button id="finish">Завершить</button>
+<pre id="status">Загрузка</pre><iframe id="live" title="Проверка перехода"></iframe>
+<script>
+const frame=document.querySelector('#live'),status=document.querySelector('#status');let original='',ready=false;
+async function load(){const width=Number(document.querySelector('#width').value);frame.style.width=width+'px';frame.style.height=(width===320?568:812)+'px';frame.srcdoc=original;await new Promise(r=>frame.onload=r);await new Promise(r=>setTimeout(r,800));ready=true;status.textContent='Готово';}
+async function run(slow){if(!ready)return;const w=frame.contentWindow;const code=`(async()=>{
+ const wait=ms=>new Promise(r=>setTimeout(r,ms));map.stop();document.getElementById('newLogicToggle').checked=true;map.jumpTo({center:USER_LOCATION,zoom:13});await wait(220);newPinMotion.active=false;
+ const layer=document.getElementById('markers'),width=layer.clientWidth,height=layer.clientHeight;
+ const make=(id,x,y,weight)=>{const b=brands[id%brands.length];return {...points[0],pinId:970000+id,id:970000+id,name:b[0],logo:b[5],partnerWeight:weight,selected:false,...unprojectActive([x,y])};};
+ const which=${JSON.stringify(document.querySelector('#case').value)},x=which==='logo'?width-22:70;
+ const p=make(30,x,220,100),high=make(31,x,220,500),leaders=Array.from({length:4},(_,i)=>make(i,55,55+i*100,600-i));
+ let before,after;
+ if(which==='logo'||which==='text'){before=[high,p];after=[{...high,...unprojectActive([x,80])},p];}
+ if(which==='appear'){before=[];after=[p];}
+ if(which==='collapse'){before=[p];after=[high,p];}
+ if(which.startsWith('mini')||which==='split'){
+  const n=which==='split'?4:Number(which.slice(4));
+  const separate=Array.from({length:n},(_,i)=>make(40+i,width-55,70+i*100,100-i));
+  const together=Array.from({length:n},(_,i)=>make(40+i,width-55,220+i*6,100-i));
+  before=[...leaders,...(which==='split'?together:separate)];after=[...leaders,...(which==='split'?separate:together)];
+ }
+ renderNewTilePins(layer,before);await wait(380);renderNewTilePins(layer,after);
+ const ghosts=[...document.querySelectorAll('.new-pin-transition-ghost')];
+ ${slow?"ghosts.flatMap(el=>el.getAnimations({subtree:true})).forEach(a=>{a.pause();a.currentTime=0;});":""}
+ parent.document.querySelector('#status').textContent=JSON.stringify({transition:which,ghosts:ghosts.length,text:layer.querySelectorAll('[data-state="expanded"]').length,mini:layer.querySelectorAll('.new-mini-cluster').length});
+})();`;
+ const script=w.document.createElement('script');script.textContent=code;w.document.body.append(script);}
+document.querySelector('#run').onclick=()=>run(false);document.querySelector('#slow').onclick=()=>run(true);
+document.querySelector('#width').onchange=load;
+for(const button of document.querySelectorAll('[data-time]'))button.onclick=()=>{frame.contentDocument.querySelectorAll('.new-pin-transition-ghost').forEach(el=>el.getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=Number(button.dataset.time);}));status.textContent+=' | '+button.dataset.time+' ms';};
+document.querySelector('#finish').onclick=()=>{const s=frame.contentDocument.createElement('script');s.textContent='clearNewPinTransitions();';frame.contentDocument.body.append(s);};
+(async()=>{original=await(await fetch('../index.html?transition='+Date.now(),{cache:'no-store'})).text();original=original.replace('<head>','<head><base href="'+new URL('../',location.href).href+'">');await load();})();
+</script>
