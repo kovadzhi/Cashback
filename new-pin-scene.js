@@ -1,3 +1,6 @@
+/* Geographic pin anchors always coincide with the logo centre. */
+function newPinOffset(state){return state==='dot'?8:state==='compact'?14:18;}
+function newPinZ(state,absent=false){return absent?0:state==='dot'?100:state==='expanded'?300:200;}
 /* Logical tile cache and visible DOM are separate. Camera frames only project
    cached records, cull them, and resolve monotonic state changes using numbers. */
 function newPinCacheTiles(z){
@@ -19,7 +22,7 @@ function createNewPinElement(p,state='expanded'){
  const pill=document.createElement('div');pill.className='pill';el.append(pill);
  if(state==='dot'){
   el.classList.add('partner-dot');pill.style.width='16px';
-  pill.style.backgroundColor=newPartnerDotColors.get(p.name)||p.color;el.style.zIndex='4';
+  pill.style.backgroundColor=newPartnerDotColors.get(p.name)||p.color;el.style.zIndex=String(newPinZ(state));
  }else{
   const wrap=document.createElement('span');wrap.className='logo-wrap';
   const logo=document.createElement('span');logo.className='logo';
@@ -29,7 +32,7 @@ function createNewPinElement(p,state='expanded'){
   for(const [className,text] of [['name',p.name],['cash',p.cashLabel||`Кэшбэк ${p.cash}%`]]){
    const span=document.createElement('span');span.className=className;span.textContent=text;copy.append(span);
   }
-  pill.append(copy);el.style.zIndex='1000';
+  pill.append(copy);el.style.zIndex=String(newPinZ(state));
   if(state==='compact'){el.classList.add('compact','new-logic-compact');pill.style.width='28px';}
  }
  return el;
@@ -58,7 +61,7 @@ function registerNewPinScene(layer,source,virtual){
 }
 function newPinRecordRect(record){
  const {pt,state,width,height}=record;
- const left=pt.x-(record.kind==='cluster'?width/2:state==='dot'?8:18),top=pt.y-height/2;
+ const left=pt.x-(record.kind==='cluster'?width/2:newPinOffset(state)),top=pt.y-height/2;
  return {left,top,right:left+width,bottom:top+height};
 }
 function newPinRectVisible(rect,width,height){return rect.right>1&&rect.left<width-1&&rect.bottom>1&&rect.top<height-1;}
@@ -71,8 +74,9 @@ function applyNewPinRecordState(record,state){
  el.dataset.state=state;
  if(state==='dot'){
   el.classList.add('partner-dot');pill.replaceChildren();pill.style.width='16px';
-  pill.style.backgroundColor=newPartnerDotColors.get(record.p.name)||record.p.color;el.style.zIndex='4';
+  pill.style.backgroundColor=newPartnerDotColors.get(record.p.name)||record.p.color;el.style.zIndex=String(newPinZ(state));
  }else{pill.style.backgroundColor='';if(!pill.querySelector('img'))pill.replaceChildren(...createNewPinElement(record.p,'compact').querySelector('.pill').childNodes);el.classList.add('compact','new-logic-compact');pill.style.width='28px';}
+ el.style.zIndex=String(newPinZ(state));
 }
 function updateNewPinFrame(constrain=newPinMotion.active||map.isMoving(),settleEdges=false){
  const scene=newPinMotion.scene;if(!scene)return;

@@ -19,13 +19,13 @@ function captureNewPinTransitions(layer){
 }
 function newPinTransitionGeometry(item){
  if(item.visual)return item.visual.geometry;
- return {width:item.width,height:item.height,offset:item.kind==='cluster'?item.width/2:item.state==='dot'?8:18,top:-item.height/2};
+ return {width:item.width,height:item.height,offset:item.kind==='cluster'?item.width/2:newPinOffset(item.state),top:-item.height/2};
 }
 function newPinAnimationHost(layer){
- let host=layer.parentElement.querySelector('.new-pin-animation-layer');
- if(!host){host=document.createElement('div');host.className='new-pin-animation-layer';host.setAttribute('aria-hidden','true');layer.parentElement.append(host);}
- host.pinParent=layer.parentElement;
- host.style.cssText=`position:absolute;pointer-events:none;overflow:hidden;z-index:3;left:${layer.offsetLeft}px;top:${layer.offsetTop}px;width:${layer.clientWidth}px;height:${layer.clientHeight}px`;
+ let host=layer.querySelector(':scope > .new-pin-animation-layer');
+ if(!host){host=document.createElement('div');host.className='new-pin-animation-layer';host.setAttribute('aria-hidden','true');layer.append(host);}
+ host.pinParent=layer;
+ host.style.cssText=`position:absolute;pointer-events:none;overflow:hidden;z-index:auto;left:0;top:0;width:${layer.clientWidth}px;height:${layer.clientHeight}px`;
  return host;
 }
 function positionNewPinTransitions(){
@@ -34,17 +34,19 @@ function positionNewPinTransitions(){
 function animateNewPinVisual(template,from,to,host,hide=null,merge=false){
  if(!host.isConnected)host.pinParent.append(host);
  const ghost=document.createElement('div');ghost.className='new-pin-transition-ghost';
+ ghost.style.zIndex=String(newPinZ(to.state,to.absent||false));
  ghost.setAttribute('aria-hidden','true');ghost.dataset.anchorLng=to.lng;ghost.dataset.anchorLat=to.lat;
- const shell=template.cloneNode(true);shell.classList.remove('new-tile-pin','new-tile-cluster','partner-dot','compact','new-logic-compact');
+ const shell=template.cloneNode(true);shell.classList.remove('marker','cluster','new-tile-pin','new-tile-cluster','partner-dot','compact','new-logic-compact');
+ if(shell.classList.contains('new-mini-cluster')){shell.classList.remove('new-mini-cluster');shell.classList.add('new-pin-mini-shell');}
  shell.classList.add('new-pin-transition-shell');
- for(const attr of ['data-pin-id','data-cluster-key','role','tabindex','aria-label'])shell.removeAttribute(attr);
+ for(const attr of ['data-pin-id','data-cluster-key','data-state','data-member-ids','data-partner-count','data-layout-hidden','role','tabindex','aria-label'])shell.removeAttribute(attr);
  shell.style.cssText='position:absolute;left:0;top:0;transform:none;visibility:visible;pointer-events:none;box-shadow:none;overflow:visible;margin:0';
  const pill=shell.querySelector('.pill'),surface=pill||shell;
  surface.style.setProperty('min-width','0','important');surface.style.overflow='hidden';
  surface.style.backgroundColor='#fff';surface.style.border='0';
  const dot=document.createElement('span');dot.className='new-pin-transition-dot';
  dot.style.backgroundColor=newPartnerDotColors.get(merge?from.p?.name:to.p?.name||from.p?.name)||'#428BF9';
- ghost.append(shell,dot);host.append(ghost);if(hide)hide.style.visibility='hidden';
+ ghost.append(dot,shell);host.append(ghost);if(hide)hide.style.visibility='hidden';
  const a=newPinTransitionGeometry(from),b=newPinTransitionGeometry(to),visual=from.visual;
  const fromDot=from.state==='dot',toDot=to.state==='dot'||merge,split=!!from.split;
  const startOpacity=visual?.opacity??(from.absent?0:1),endOpacity=to.absent||merge?0:1;

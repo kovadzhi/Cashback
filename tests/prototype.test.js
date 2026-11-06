@@ -218,6 +218,7 @@
   await runNewPinTests(check,settle);
   await runNewPinClusterTests(check,settle);
   await runNewPinArtifactTests(check,settle);
+  await runNewPinAnchorTests(check,settle);
   await runNewPinStabilityTests(check,settle);
   parent.reportTest('Проверки завершены',true);
  }catch(error){parent.reportTest('Исключение в тестах',false,error.stack);}

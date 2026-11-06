@@ -69,7 +69,7 @@ function commitNewTilePins(layer,staging){
   if(current.parentElement!==layer)layer.append(current);
   retained.add(current);
  }
- for(const el of [...layer.children])if(el!==staging&&!retained.has(el)&&!el.classList.contains('new-pin-collapse-ghost'))el.remove();
+ for(const el of [...layer.children])if(el!==staging&&!retained.has(el)&&!el.classList.contains('new-pin-collapse-ghost')&&!el.classList.contains('new-pin-animation-layer'))el.remove();
  staging.remove();
 }
 function renderNewTilePins(layer,source){
@@ -95,7 +95,7 @@ function renderNewTilePins(layer,source){
  const inViewport=p=>{const pt=project(p);return pt.x>=0&&pt.y>=0&&pt.x<=size.clientWidth&&pt.y<=size.clientHeight;};
  const dotVisible=p=>{const pt=project(p);return newPinRectVisible({left:pt.x-8,right:pt.x+8,top:pt.y-8,bottom:pt.y+8},size.clientWidth,size.clientHeight);};
  const candidates=plan.logos.slice().sort(compareStable).filter(p=>{
-  const pt=project(p),visible=newPinRectVisible({left:pt.x-18,right:pt.x+10,top:pt.y-14,bottom:pt.y+14},size.clientWidth,size.clientHeight);
+  const pt=project(p),visible=newPinRectVisible({left:pt.x-14,right:pt.x+14,top:pt.y-14,bottom:pt.y+14},size.clientWidth,size.clientHeight);
   if(!visible)virtual.set(p.pinId,{p,state:'compact'});return visible;
  });
  const expandedPartners=new Set(),secondaryPartners=new Set();
@@ -123,7 +123,7 @@ function renderNewTilePins(layer,source){
   el.querySelector('.pill').replaceChildren();
   el.querySelector('.pill').style.width='16px';
   el.querySelector('.pill').style.backgroundColor=newPartnerDotColors.get(p.name)||p.color;
-  el.style.zIndex='4';el.dataset.state='dot';pinDisplayState.set(String(p.pinId),'dot');dots++;
+  el.style.zIndex=String(newPinZ('dot'));el.dataset.state='dot';pinDisplayState.set(String(p.pinId),'dot');dots++;
  }
  for(const p of candidates)entries.push({...marker(p),type:'pin'});
  // Every tile winner may fill a text slot. A slot is consumed only after
@@ -154,7 +154,7 @@ function renderNewTilePins(layer,source){
    if(expandedPartners.has(p.name))secondaryPartners.add(p.name);
   }
   el.dataset.state=state;pinDisplayState.set(String(p.pinId),state);
-  el.style.zIndex='1000';state==='expanded'?expanded++:compact++;
+  el.style.zIndex=String(newPinZ(state));state==='expanded'?expanded++:compact++;
  }
  for(const tile of plan.clusters){
   const mean=tile.items.reduce((sum,p)=>({lng:sum.lng+p.lng/tile.count,lat:sum.lat+p.lat/tile.count}),{lng:0,lat:0});
@@ -171,7 +171,7 @@ function renderNewTilePins(layer,source){
   const mean=members.reduce((sum,p)=>({lng:sum.lng+p.lng/members.length,lat:sum.lat+p.lat/members.length}),{lng:0,lat:0});
   const pt=projectActive([mean.lng,mean.lat]);
   el.dataset.lng=mean.lng;el.dataset.lat=mean.lat;
-  el.style.left=pt.x+'px';el.style.top=pt.y+'px';el.style.zIndex='500';
+  el.style.left=pt.x+'px';el.style.top=pt.y+'px';el.style.zIndex=String(newPinZ('cluster'));
   el.onclick=()=>map.easeTo({center:[mean.lng,mean.lat],zoom:Math.min(MAX_MAP_ZOOM,map.getZoom()+1),duration:350});
   const safe=newPinSafeRect({left:pt.x-18,right:pt.x+18,top:pt.y-18,bottom:pt.y+18});
   const blocked=occupied.some(rect=>newPinRectsOverlap(rect,safe));
@@ -210,7 +210,7 @@ function renderNewTilePins(layer,source){
   if(expanded>=4)break;
   if(expandedPartners.has(p.name)||!inViewport(p))continue;
   const ownCluster=clusterOwners.get(p.pinId),pt=project(p);
-  const minimum={left:viewport.left+pt.x-18,right:viewport.left+pt.x+10,top:viewport.top+pt.y-14,bottom:viewport.top+pt.y+14};
+  const minimum={left:viewport.left+pt.x-14,right:viewport.left+pt.x+14,top:viewport.top+pt.y-14,bottom:viewport.top+pt.y+14};
   // Full text contains this logo-sized box. Reject impossible candidates
   // before allocating elements or measuring text.
   if(!fullyInside(minimum,p)||occupied.some(rect=>(!ownCluster||rect.owner!==ownCluster)&&newPinRectsOverlap(rect,newPinSafeRect(minimum))&&(!rect.owner||rect.owner.type!=='pin'||rect.owner.el.dataset.state!=='compact'||compareNewPinWeight(p,rect.owner.p)>=0)))continue;

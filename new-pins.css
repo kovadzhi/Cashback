@@ -12,8 +12,29 @@
 .new-mini-avatar{display:block;position:relative;flex:0 0 24px;width:24px;height:24px;border-radius:50%;overflow:hidden;background:#fff}
 .new-mini-avatar+ .new-mini-avatar{margin-left:-6px;mask-image:url('assets/mini-cluster-mask.svg');mask-size:19.5557px 24px;mask-position:4.4443px 0;mask-repeat:no-repeat}
 .new-mini-avatar img{display:block;width:24px;height:24px;object-fit:contain;border-radius:50%}
-.new-pin-transition-ghost{pointer-events:none!important;z-index:1500!important;box-sizing:border-box;border-radius:52px;contain:layout style;position:absolute;overflow:visible;animation:none!important;transition:none!important}
+.new-pin-transition-ghost{pointer-events:none!important;box-sizing:border-box;border-radius:52px;contain:layout style;position:absolute;overflow:visible;animation:none!important;transition:none!important}
 .new-pin-transition-shell{pointer-events:none!important;animation:none!important;transition:none!important}
 .new-pin-transition-dot{position:absolute;display:block;width:16px;height:16px;border:2px solid white;border-radius:50%;box-sizing:border-box;pointer-events:none;box-shadow:none}
 .new-pin-transition-ghost .pill{transition:none!important;animation:none!important;max-width:none!important}
 @media(prefers-reduced-motion:reduce){.new-pin-transition-ghost{display:none}}
+
+/* State sizes share the same logo centre, with no inline baseline gap. */
+.marker.new-tile-pin{display:block;height:36px;transform:translate(-18px,-50%)}
+.marker.new-tile-pin .pill{display:flex;height:36px}
+.marker.new-tile-pin.new-logic-compact{height:28px;transform:translate(-14px,-50%)}
+.marker.new-tile-pin.new-logic-compact .pill{height:28px}
+.marker.new-tile-pin.partner-dot{height:16px;transform:translate(-8px,-50%)}
+.marker.new-tile-pin.partner-dot .pill{height:16px}
+/* Transient visuals share the live marker stacking context. Their shell has
+   separate classes so it cannot become a live marker or hit target. */
+.new-pin-transition-shell{box-sizing:border-box;border-radius:52px;display:flex;align-items:center;justify-content:center;background:#fff}
+.new-pin-transition-shell .pill{display:flex;align-items:center;gap:8px;box-sizing:border-box;background:#fff;border:0;border-radius:52px;padding:0;white-space:nowrap;overflow:hidden}
+.new-pin-transition-shell .logo-wrap{width:34px;height:36px;padding:2px 0 2px 2px;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;flex:0 0 34px;background:#fff}
+.new-pin-transition-shell .logo{width:32px;height:32px;border-radius:50%;overflow:hidden;flex:0 0 32px;display:grid;place-items:center}
+.new-pin-transition-shell .logo img{display:block;width:100%;height:100%;object-fit:contain;border-radius:50%}
+.new-pin-transition-shell .pin-copy{display:flex;flex:0 1 auto;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:0;width:max-content;max-width:calc(100vw - 68px);padding-right:10px;box-sizing:border-box}
+.new-pin-transition-shell .name{display:block;max-width:min(125px,calc(100vw - 90px));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"SF Pro Text",system-ui,sans-serif;font-size:12px;font-style:normal;font-weight:600;line-height:normal;color:#333;font-feature-settings:"liga" off,"clig" off}
+.new-pin-transition-shell .cash{display:block;max-width:min(107px,calc(100vw - 90px));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:transparent;color:#9299A2;border-radius:0;padding:0;font-family:"SF Pro Text",system-ui,sans-serif;font-size:11px;font-weight:400;line-height:normal}
+@media(max-width:420px){.new-pin-transition-shell .pin-copy{max-width:calc(100vw - 66px)}.new-pin-transition-shell .name{max-width:min(125px,calc(100vw - 92px))}}
+
+.new-pin-transition-shell.new-pin-mini-shell{height:28px;padding:2px;gap:0;justify-content:flex-start;overflow:visible}

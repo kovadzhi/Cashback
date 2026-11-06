@@ -9,6 +9,7 @@ function createNewMiniCluster(members){
  const el=document.createElement('div');el.className='cluster new-tile-cluster new-mini-cluster';
  el.dataset.clusterKey='mini:'+members.map(p=>p.pinId).sort((a,b)=>a-b).join('-');
  el.dataset.memberIds=members.map(p=>p.pinId).join(',');
+ el.style.zIndex=String(newPinZ('cluster'));
  el.dataset.partnerCount=String(partners.length);
  el.style.width=(28+18*(partners.length-1))+'px';
  const mean=newClusterMean(members),pt=projectActive([mean.lng,mean.lat]);
@@ -30,7 +31,7 @@ function buildNewMiniClusters(staging,source,occupied,virtual){
  for(const el of staging.querySelectorAll('.new-tile-pin')){
   const state=el.dataset.state;if(state==='dot')continue;
   const p=byId.get(el.dataset.pinId),pt=projectActive([p.lng,p.lat]),w=state==='compact'?28:parseFloat(el.querySelector('.pill').style.width),h=state==='compact'?28:40;
-  if(!newPinRectVisible({left:pt.x-18,right:pt.x-18+w,top:pt.y-h/2,bottom:pt.y+h/2},viewport.right,viewport.bottom))continue;
+  if(!newPinRectVisible({left:pt.x-newPinOffset(state),right:pt.x-newPinOffset(state)+w,top:pt.y-h/2,bottom:pt.y+h/2},viewport.right,viewport.bottom))continue;
   if(!visibleStates.has(p.name))visibleStates.set(p.name,new Set());
   visibleStates.get(p.name).add(el.dataset.state);
  }
