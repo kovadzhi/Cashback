@@ -57,6 +57,7 @@ async function runNewPinTests(check,settle){
  const replacementRects=[...layer.querySelectorAll('.marker:not(.partner-dot),.cluster')].map(el=>newPinSafeRect(el.getBoundingClientRect()));
  check('Новая логика: добор текста сохраняет безопасные зоны',replacementRects.every((rect,i)=>replacementRects.slice(i+1).every(other=>!newPinRectsOverlap(rect,other))));
  // Force a fourth text pin to come from below the tile's top five.
+ // Keep the free control pin in a separate column as tile height changes.
  const fullTile=getVisibleTiles(z).find(tile=>{
   const a=projectActive(tileToLngLat(tile.x,tile.y,z)),b=projectActive(tileToLngLat(tile.x+1,tile.y+1,z));
   return a.x<=60&&b.x>=60&&a.y>25&&b.y<viewportHeight-25;
@@ -64,7 +65,7 @@ async function runNewPinTests(check,settle){
  const tileTop=projectActive(tileToLngLat(fullTile.x,fullTile.y,z)).y;
  const reserveHigh=Array.from({length:6},(_,i)=>make(100+i,60,tileTop+60,400-i,'Blocked '+i));
  const reservePoint=make(110,60,tileTop+140,100,'Reserve');
- const reserveScene=[...reserveHigh,reservePoint,make(111,60,55,90,'Free A'),make(112,60,viewportHeight-40,80,'Free B')];
+ const reserveScene=[...reserveHigh,reservePoint,make(111,220,55,90,'Free A'),make(112,60,viewportHeight-40,80,'Free B')];
  check('Новая логика: резервный кандидат исходно не входит в пять логотипов тайла',getNewTilePlan(reserveScene,z).dots.some(p=>p.pinId===reservePoint.pinId));
  renderNewTilePins(layer,reserveScene);
  check('Новая логика: резерв ниже пяти лидеров добирает четвёртый текстовый пин',layer.querySelectorAll('[data-state="expanded"]').length>=4&&state(110)==='expanded');
@@ -105,8 +106,8 @@ async function runNewPinTests(check,settle){
  for(const zoom of [10,12,14,17,22]){
   map.jumpTo({zoom,center:zoom>=17?[points[0].lng,points[0].lat]:USER_LOCATION});render();await settle();
   const visible=new Set(getVisibleTiles(getQuadkeyZoom(map.getZoom())).map(t=>t.key));
-  const expected=points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,getQuadkeyZoom(map.getZoom()));return visible.has(tileToQuadkey(tile.x,tile.y,getQuadkeyZoom(map.getZoom())));}).length;
-  const activeIds=new Set(points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,getQuadkeyZoom(map.getZoom()));return visible.has(tileToQuadkey(tile.x,tile.y,getQuadkeyZoom(map.getZoom())));}).map(p=>String(p.pinId)));
+  const expected=points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,getQuadkeyZoom(map.getZoom()));return visible.has(getTileKey(tile.x,tile.y,getQuadkeyZoom(map.getZoom())));}).length;
+  const activeIds=new Set(points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,getQuadkeyZoom(map.getZoom()));return visible.has(getTileKey(tile.x,tile.y,getQuadkeyZoom(map.getZoom())));}).map(p=>String(p.pinId)));
   const actual=[...newPinMotion.scene.representedIds].filter(id=>activeIds.has(id)).length;
   check(`Новая логика: все точки учтены на зуме ${zoom}`,expected===actual,`${actual}/${expected}`);
  }

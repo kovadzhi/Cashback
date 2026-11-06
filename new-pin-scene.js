@@ -2,11 +2,11 @@
    cached records, cull them, and resolve monotonic state changes using numbers. */
 function newPinCacheTiles(z){
  const visible=getVisibleTiles(z),tiles=new Map(visible.map(tile=>[tile.key,tile]));
- const limit=2**z;
+ const limit=Math.ceil(tileGridSize(z));
  for(const tile of visible)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
   const x=tile.x+dx,y=tile.y+dy;
   if(x<0||y<0||x>=limit||y>=limit)continue;
-  const key=tileToQuadkey(x,y,z);
+  const key=getTileKey(x,y,z);
   if(!tiles.has(key))tiles.set(key,{x,y,z,key});
  }
  return [...tiles.values()];

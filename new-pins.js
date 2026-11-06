@@ -10,7 +10,7 @@ function getNewTilePlan(source,tileZoom,visibleTiles=getVisibleTiles(tileZoom)){
  for(const p of source){
   if(p.selected)continue;
   const t=lngLatToTile(p.lng,p.lat,tileZoom);
-  buckets.get(tileToQuadkey(t.x,t.y,tileZoom))?.items.push(p);
+  buckets.get(getTileKey(t.x,t.y,tileZoom))?.items.push(p);
  }
  const logos=[],dots=[],clusters=[];
  for(const tile of buckets.values()){

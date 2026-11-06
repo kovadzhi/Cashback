@@ -153,7 +153,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}.hint{font-size:11px;color
 <label class="check"><input type="checkbox" id="showTiles"> Показывать тайлы текущего zoom</label>
 <div class="tile-info" id="tileSummary">Включите сетку, чтобы увидеть тайлы видимой области.</div>
 <div class="tile-list" id="tileList" style="display:none"></div>
-<div class="hint">Quadkey строится по XYZ-индексам тайла на целочисленном zoom. Для БД диапазон тайла: от Quadkey + 0 до Quadkey + 3 на глубине 23.</div>
+<div class="hint">Квадратная сетка вдвое плотнее стандартной: сторона ≈181 px. ID: zoom/x/y. Диапазон Quadkey глубины 23 охватывает тайл; требуется фильтрация по его границам.</div>
 </div>
 <div class="section">
 <div class="label">Картографическая подложка</div>
@@ -260,16 +260,28 @@ function makeGoodsPoints(){
 function getRenderPoints(){return document.getElementById('goodsToggle').checked?points.concat(goodsPoints):points;}
 // XYZ / Web Mercator tile math. Quadkey digits: 0=NW, 1=NE, 2=SW, 3=SE.
 const DB_QUADKEY_DEPTH=23;
+// Double tile density while preserving square Mercator cells at every app zoom.
+const TILE_DENSITY=2;
+function tileGridSize(z){return 2**z*Math.sqrt(TILE_DENSITY);}
+function getTileKey(x,y,z){return `${z}/${x}/${y}`;}
+// A scaled cell is not a standard Quadkey. Use an enclosing DB range;
+// points fetched from this range must still be filtered by the cell bounds.
+function getTileDbRange(x,y,z){
+ const n=tileGridSize(z),depth=DB_QUADKEY_DEPTH,dbSize=2**depth;
+ const first=v=>Math.max(0,Math.min(dbSize-1,Math.floor(v/n*dbSize)));
+ const last=v=>Math.max(0,Math.min(dbSize-1,Math.ceil(v/n*dbSize)-1));
+ return {from:tileToQuadkey(first(x),first(y),depth),to:tileToQuadkey(last(x+1),last(y+1),depth)};
+}
 function lngLatToTile(lng,lat,z){
- const n=2**z, latClamped=Math.max(-85.05112878,Math.min(85.05112878,lat));
+ const n=tileGridSize(z), latClamped=Math.max(-85.05112878,Math.min(85.05112878,lat));
  const x=Math.floor((lng+180)/360*n);
  const latRad=latClamped*Math.PI/180;
  const y=Math.floor((1-Math.asinh(Math.tan(latRad))/Math.PI)/2*n);
- return {x:Math.max(0,Math.min(n-1,x)),y:Math.max(0,Math.min(n-1,y)),z};
+ return {x:Math.max(0,Math.min(Math.ceil(n)-1,x)),y:Math.max(0,Math.min(Math.ceil(n)-1,y)),z};
 }
 function tileToQuadkey(x,y,z){let key='';for(let i=z;i>0;i--){let digit=0,mask=1<<(i-1);if(x&mask)digit+=1;if(y&mask)digit+=2;key+=digit;}return key;}
 function quadkeyToTile(key){let x=0,y=0,z=key.length;for(let i=z;i>0;i--){const mask=1<<(i-1),d=Number(key[z-i]);if(d&1)x|=mask;if(d&2)y|=mask;}return {x,y,z};}
-function tileToLngLat(x,y,z){const n=2**z;const lng=x/n*360-180;const lat=Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI;return [lng,lat];}
+function tileToLngLat(x,y,z){const n=tileGridSize(z);const lng=x/n*360-180;const lat=Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI;return [lng,lat];}
 function quadkeyDbRange(key){const suffix=DB_QUADKEY_DEPTH-key.length;return {from:key+'0'.repeat(suffix),to:key+'3'.repeat(suffix)};}
 function getVisibleTiles(tileZoom){
  if(!mapReady)return [];
@@ -280,8 +292,8 @@ function getVisibleTiles(tileZoom){
  // Для Москвы область не пересекает антимеридиан. Перебираем все XYZ-тайлы
  // прямоугольника видимой области, как в описанном backend-алгоритме.
  for(let y=nw.y;y<=se.y;y++)for(let x=nw.x;x<=se.x;x++){
-  const key=tileToQuadkey(x,y,z);
-  out.push({x,y,z,key,range:quadkeyDbRange(key)});
+  const key=getTileKey(x,y,z);
+  out.push({x,y,z,key,range:getTileDbRange(x,y,z)});
  }
  return out;
 }
@@ -289,7 +301,7 @@ function renderTiles(){
  const layer=document.getElementById('tileLayer'),list=document.getElementById('tileList'),summary=document.getElementById('tileSummary');layer.innerHTML='';
  if(!showTiles.checked||!mapReady){list.style.display='none';summary.textContent=showTiles.checked?'Ожидание загрузки карты…':'Включите сетку, чтобы увидеть тайлы видимой области.';return;}
  const visualZ=getAppZoom(map.getZoom()),z=getQuadkeyZoom(map.getZoom());const tiles=getVisibleTiles(z);list.style.display='block';
- summary.innerHTML=`Уровень приложения: <b>${visualZ} / 23</b> · MapLibre zoom: <b>${Math.floor(map.getZoom()+1e-8)} / 23</b><br>Видимых тайлов: <b>${tiles.length}</b> · всего на уровне: <b>${(4**z).toLocaleString('ru-RU')}</b>`;
+ summary.innerHTML=`Уровень приложения: <b>${visualZ} / 23</b> · MapLibre zoom: <b>${Math.floor(map.getZoom()+1e-8)} / 23</b><br>Видимых тайлов: <b>${tiles.length}</b> · всего на уровне: <b>${(Math.ceil(tileGridSize(z))**2).toLocaleString('ru-RU')}</b>`;
  tiles.forEach(t=>{const nw=tileToLngLat(t.x,t.y,z),se=tileToLngLat(t.x+1,t.y+1,z),a=projectActive(nw),b=projectActive(se),el=document.createElement('div');el.className='tile-cell';el.style.left=Math.min(a.x,b.x)+'px';el.style.top=Math.min(a.y,b.y)+'px';el.style.width=Math.abs(b.x-a.x)+'px';el.style.height=Math.abs(b.y-a.y)+'px';const label=document.createElement('span');label.textContent=t.key||'(root)';el.appendChild(label);layer.appendChild(el);});
  list.innerHTML=tiles.map(t=>{const r=t.range;return `<div><b>${t.key||'(root)'}</b> · x:${t.x} y:${t.y} · БД: ${r.from} … ${r.to}</div>`}).join('');
 }
@@ -302,14 +314,14 @@ const MAX_CLUSTER_TILE_ZOOM=21;
 const MIN_POINTS_PER_CLUSTER_TILE=10;
 function getTileClusters(source,tileZoom){
  // Не группируем массив целиком по приблизительным координатам: сначала
- // строим именно сетку тайлов 256 px текущего уровня и получаем Quadkey каждого.
+ // строим квадратную сетку ≈181 px текущего уровня с устойчивыми ID.
  if(tileZoom<MIN_POINT_TILE_ZOOM||tileZoom>MAX_POINT_TILE_ZOOM)
   return {clusters:[],singles:[],visibleTiles:[],tileZoom};
  const visibleTiles=getVisibleTiles(tileZoom);
  const tileBuckets=new Map(visibleTiles.map(t=>[t.key,{...t,items:[]}]));
  source.forEach(p=>{
   const t=lngLatToTile(p.lng,p.lat,tileZoom);
-  const key=tileToQuadkey(t.x,t.y,tileZoom);
+  const key=getTileKey(t.x,t.y,tileZoom);
   const bucket=tileBuckets.get(key);
   if(bucket)bucket.items.push(p);
  });
@@ -707,7 +719,7 @@ for(let p of sorted){let projected=mapReady?projectActive([p.lng,p.lat]):{x:p.x*
 document.getElementById('shown').textContent=full+compact;document.getElementById('compactCount').textContent=compact;document.getElementById('hiddenCount').textContent=hidden;
 renderTiles();
 }
-document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode;document.getElementById('modeHint').textContent={hybrid:'Кластеры и группировка выполняются по Quadkey тайлов, без экранного объединения.',cluster:'Сетка тайлов 256 px и Quadkey. 10+ точек в тайле объединяются на уровнях 0–21; на 22–23 показываются отдельные пины.',rank:'Ранжируем предложения; при нехватке места переключаем на логотип.',all:'Показываем все пины без обработки коллизий.'}[mode];render()});
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode;document.getElementById('modeHint').textContent={hybrid:'Кластеры и группировка выполняются по Quadkey тайлов, без экранного объединения.',cluster:'Квадратная сетка тайлов ≈181 px. 10+ точек в тайле объединяются на уровнях 0–21; на 22–23 показываются отдельные пины.',rank:'Ранжируем предложения; при нехватке места переключаем на логотип.',all:'Показываем все пины без обработки коллизий.'}[mode];render()});
 const zoomInput=document.getElementById('zoom'),showTiles=document.getElementById('showTiles');
 zoomInput.oninput=()=>{zoom=+zoomInput.value;zoomVal.textContent=zoom;if(mapReady)map.easeTo({zoom,duration:150});render()};
 ['cashWeight','distanceWeight','relevanceWeight'].forEach(id=>document.getElementById(id).oninput=e=>{document.getElementById(id+'Val').textContent=e.target.value+'%';render()});
@@ -775,9 +787,9 @@ document.getElementById('newLogicToggle').onchange=()=>{
 makePoints(2000);makeGoodsPoints();
 
 </script>
-<script src="new-pins.js?v=20261105-performance8"></script>
+<script src="new-pins.js?v=20261106-tile-density2"></script>
 <script src="new-pin-motion.js?v=20261105-performance"></script>
-<script src="new-pin-scene.js?v=20261105-performance7"></script>
+<script src="new-pin-scene.js?v=20261106-tile-density2"></script>
 <script src="pin-text.js?v=typography1"></script>
 <script src="sheets.js?v=typography1"></script>
 <script>initSheets();initMap();connectSheetsToMap();</script>

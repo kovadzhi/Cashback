@@ -8,6 +8,16 @@
  const cameraUnchanged=before=>Math.abs(map.getZoom()-before.zoom)<1e-8&&map.getCenter().toArray().every((v,i)=>Math.abs(v-before.center[i])<1e-8)&&Math.abs(map.project(USER_LOCATION).x-before.point.x)<.01&&Math.abs(map.project(USER_LOCATION).y-before.point.y)<.01;
  try{
   await settle();
+  for(let z=APP_MIN_ZOOM;z<=APP_MAX_ZOOM;z++){
+   const n=tileGridSize(z),cell=lngLatToTile(...USER_LOCATION,z);
+   const a=projectActive(tileToLngLat(cell.x,cell.y,z));
+   const b=projectActive(tileToLngLat(cell.x+1,cell.y+1,z));
+   check(`Сетка zoom ${z}: плотность ×2 и квадратные тайлы`,Math.abs(n*n/(4**z)-2)<1e-12&&Math.abs(Math.abs(b.x-a.x)-Math.abs(b.y-a.y))<.01);
+   const center=tileToLngLat(cell.x+.5,cell.y+.5,z),roundtrip=lngLatToTile(...center,z);
+   check(`Сетка zoom ${z}: центр попадает в свой тайл`,roundtrip.x===cell.x&&roundtrip.y===cell.y);
+   const edge=lngLatToTile(180,-85.05112878,z);
+   check(`Сетка zoom ${z}: край мира имеет уникальный ID`,edge.x===Math.ceil(n)-1&&edge.y===Math.ceil(n)-1&&getTileKey(edge.x,edge.y,z)!==getTileKey(0,0,z));
+  }
   check('147 партнёров имеют категории и описания',brands.length===147&&brands.every(b=>PARTNER_INFO[b[0]]?.length===3));
   check('2000 партнёрских точек',points.length===2000);
   const counts=new Map();for(const p of points)counts.set(p.name,(counts.get(p.name)||0)+1);
@@ -52,8 +62,8 @@
   map.jumpTo({center:controlsCamera.center,zoom:controlsCamera.zoom});render();refreshOfferList();
   const tileZoom=getQuadkeyZoom(map.getZoom()),grouped=getTileClusters(points,tileZoom);
   const visibleKeys=new Set(getVisibleTiles(tileZoom).map(t=>t.key));
-  const expectedItems=points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,tileZoom);return visibleKeys.has(tileToQuadkey(tile.x,tile.y,tileZoom));}).length;
-  check('Старая кластеризация учитывает полные тайлы как в v63',grouped.singles.length+grouped.clusters.reduce((sum,g)=>sum+g.count,0)===expectedItems);
+  const expectedItems=points.filter(p=>{const tile=lngLatToTile(p.lng,p.lat,tileZoom);return visibleKeys.has(getTileKey(tile.x,tile.y,tileZoom));}).length;
+  check('Старая кластеризация учитывает полные тайлы плотной сетки',grouped.singles.length+grouped.clusters.reduce((sum,g)=>sum+g.count,0)===expectedItems);
   const cluster=document.querySelector('.cluster');
   check('В старой логике есть тайловые кластеры',!!cluster);
   const idlePosition=cluster?.style.cssText;
